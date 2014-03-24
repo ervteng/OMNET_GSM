@@ -30,7 +30,7 @@ simple MS
        	double vx; // velocity X vector
         double vy; // velocity Y vector
       	int numbts; // how many bts
-     	double timeout @unit(s); // how long do you wait before timeout 
+     	double timeout @unit(s) = default(1s); // how long do you wait before timeout 
     gates: 
         input from_air; // gate for connecting to BTS
         output to_air; // gate for connecting to BTS
@@ -46,7 +46,7 @@ simple BTS {
       	double xc; // X coordinate
         double yc; // Y coordinate
         int slots; // how many connection can be established
-        double watt; // the watt
+        double watt = default(50); // the watt
         double phones; // number of phones
     gates: 
         input from_air; // gate for connecting to MS
@@ -72,68 +72,85 @@ simple BSC {
 //
 // The network
 //
-module GSMSIM {
+network GSMSIM {
     parameters: 
-        number_ms = default(4); 
-        number_bts = default(2); 
-        xwidth; 
-        ydepth; 
+        int number_ms = default(1); 
+        int number_bts = default(1); 
+        double xwidth = default(10000); 
+        double ydepth = default(10000); 
     submodules: 
         air: Air {
-            gatesizes: 
-                to_ms[number_ms], 
-                from_ms[number_ms], 
-                to_bts[number_bts], 
+			parameters:
+           		@display("p=120,180;i=cloud");
+            gates:
+                to_ms[number_ms];
+                from_ms[number_ms]; 
+                to_bts[number_bts]; 
                 from_bts[number_bts]; 
-            display: "p=120,180;i=cloud";
         }
+            //parameters:
+           		//@display("p=120,180;i=cloud");
+        //}
         bsc: BSC{
             parameters: 
-                numbts = number_bts, 
+                numbts = number_bts; 
                 phones = number_ms; 
-            gatesizes: 
-                from_bts[number_bts], 
+                @display("p=120,50;i=router");
+            gates: 
+                from_bts[number_bts]; 
                 to_bts[number_bts]; 
-            display: "p=120,50;i=router";
         }
-        ms: MS[number_ms]{
+        ms[number_ms]: MS{
             parameters: 
-                xc = input(0,"X position"); // start x position [m]
-                yc = input(0,"Y position"); // start y position [m]	
-                vx = input(5,"Velocity X"); // velocity x [m/s]
-                vy = input(5,"Velocity Y"); // velocity y [m/s]
+                //xc = input(0,"X position"); // start x position [m]
+                //yc = input(0,"Y position"); // start y position [m]	
+                //vx = input(5,"Velocity X"); // velocity x [m/s]
+                //vy = input(5,"Velocity Y"); // velocity y [m/s]
+                xc = default(0); // start x position [m]
+                yc = default(0); // start y position [m]	
+                vx = default(5); // velocity x [m/s]
+                vy = default(5); // velocity y [m/s]
                 numbts = number_bts; 
                 timeout = 1s; 
-            display: "p=30,240;i=bwgen";
+            	@display("p=30,240;i=bwgen");
         }
-        bts: BTS[number_bts]{
+        bts[number_bts]: BTS{
             parameters: 
-                phones = number_ms, 
-                xc = input(10000,"X coordinate"), // X coordinate
-                yc = input(10000,"Y coordinate"), // Y coordinate
-                slots = input(3,"Max. users"); // how many users it can hold
-            display: "p=30,120;i=ipc";
+                phones = number_ms;
+                //xc = input(10000,"X coordinate"), // X coordinate
+               // yc = input(10000,"Y coordinate"), // Y coordinate
+                xc = default(10000); // X coordinate
+                yc = default(10000); // Y coordinate
+                //slots = input(3,"Max. users"); // how many users it can hold
+                slots = default(3); // how many users it can hold
+            	@display("p=30,120;i=ipc");
         }
 
     connections: // make all the connection between the objects
-        for i=0..number_ms-1 do 
+        for i=0..number_ms-1 { 
             ms[i].to_air --> air.from_ms[i]; 
             ms[i].from_air <-- air.to_ms[i]; 
-        endfor; 
-        for i=0..number_bts-1 do 
+        }
+        //endfor; 
+        for i=0..number_bts-1 {
             air.to_bts[i] --> bts[i].from_air; 
             air.from_bts[i] <-- bts[i].to_air; 
             bts[i].to_bsc --> bsc.from_bts[i]; 
             bts[i].from_bsc <-- bsc.to_bts[i]; 
-        endfor; 
+        }
+        //endfor; 
 } 
 
 
-network gsmsim : GSMSIM {
-    parameters: 
-        number_bts = input(1,"Number of stations:"), 
-        number_ms = input(1,"Number of cars:"), 
-        xwidth = input(10000,"Width of the plane [m]:"), 
-        ydepth = input(10000,"Depth of the plane [m]:"); 
-} 
+//network gsmsim : GSMSIM {
+//    parameters: 
+////        number_bts = input(1,"Number of stations:"); 
+////        number_ms = input(1,"Number of cars:"); 
+////        xwidth = input(10000,"Width of the plane [m]:"); 
+////        ydepth = input(10000,"Depth of the plane [m]:"); 
+//        number_bts = 1; 
+//        number_ms = 1; 
+//        xwidth = 10000; 
+//        ydepth = 10000; 
+//} 
 

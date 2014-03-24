@@ -4,20 +4,27 @@
 //-------------------------------------------------------------
 
 #include "gsmsim.h"
+#include <omnetpp.h>
 #include <math.h>
 
 // The BTS object
 class BTS: public cSimpleModule {
-    Module_Class_Members(BTS,cSimpleModule,16384)
-    virtual void activity();
-    virtual void destroy();
-    double CalculateWatt(double dblMSX, double dblMSY); // Calculate current watt
-    int *iPhoneState;                         // Buffer to hold the phone states
-    double dblXc;                                     // X coordinate
-    double dblYc;                                     // Y coordinate
-    double dblRadius;                                 // Radius
-    double dblWatt;                                   // Watt
+    //Module_Class_Members(BTS,cSimpleModule,16384);
+    public:
+        BTS();
+    protected:
+        virtual void activity();
+        virtual void destroy();
+    private:
+        double CalculateWatt(double dblMSX, double dblMSY); // Calculate current watt
+        int *iPhoneState;                         // Buffer to hold the phone states
+        double dblXc;                                     // X coordinate
+        double dblYc;                                     // Y coordinate
+        double dblRadius;                                 // Radius
+        double dblWatt;                                   // Watt
 };
+
+BTS::BTS() : cSimpleModule(16384) {}
 
 Define_Module(BTS);
 
@@ -58,7 +65,7 @@ void BTS::activity() {
     for (;;) {
         // receive message
         msg = receive();
-        iType = msg->kind();
+        iType = msg->getKind();
         iClientAddr = msg->par("src");
         iDest = msg->par("dest");
         switch (iType) {
@@ -87,7 +94,7 @@ void BTS::activity() {
             dblPower = CalculateWatt(dblMSXc, dblMSYc);
             if ((dblPower > 0) && (iConnections < iSlots)) // if it sees the ms and has free slot
                     {
-                msg->addPar(*new cPar("data") = dblPower);
+                msg->addPar(*new cMsgPar("data") = dblPower);
                 ev << "Sending data to " << iDest;
                 send(msg, "to_air");
             }
@@ -110,9 +117,9 @@ void BTS::activity() {
                 if (iNewBTS > -1)   // Disconnect MS and send the new bts number
                         {
                     handover_ms = new cMessage("HANDOVER_MS", HANDOVER_MS);
-                    handover_ms->addPar(*new cPar("newbts") = iNewBTS);
-                    handover_ms->addPar(*new cPar("dest")) = iMS;
-                    handover_ms->addPar(*new cPar("src")) = iDest;  //send to ms
+                    handover_ms->addPar(*new cMsgPar("newbts") = iNewBTS);
+                    handover_ms->addPar(*new cMsgPar("dest")) = iMS;
+                    handover_ms->addPar(*new cMsgPar("src")) = iDest;  //send to ms
                     iConnections--;
                     ev << "Sending HANDOVER_MS to client " << iClientAddr
                             << ", free slots left:" << iSlots - iConnections
@@ -120,8 +127,8 @@ void BTS::activity() {
                     send(handover_ms, "to_air");
                 } else {                            // Disconnect MS immediately
                     force_disc = new cMessage("FORCE_DISC", FORCE_DISC);
-                    force_disc->addPar(*new cPar("dest")) = iMS;
-                    force_disc->addPar(*new cPar("src")) = iDest;   //send to ms
+                    force_disc->addPar(new cMsgPar("dest")) = iMS;
+                    force_disc->addPar(new cMsgPar("src")) = iDest;   //send to ms
                     iConnections--;
                     ev << "Sending FORCE_DISC to client " << iClientAddr
                             << ", free slots left:" << iSlots - iConnections
@@ -136,8 +143,8 @@ void BTS::activity() {
                     {
                 iMS = msg->par("ms");
                 check_ms = new cMessage("CHECK_MS", CHECK_MS);
-                check_ms->addPar(*new cPar("dest")) = iMS;
-                check_ms->addPar(*new cPar("src")) = iDest;
+                check_ms->addPar(*new cMsgPar("dest")) = iMS;
+                check_ms->addPar(*new cMsgPar("src")) = iDest;
                 ev << "Sending CHECK_MS to client " << iMS << '\n';
                 send(check_ms, "to_air");
             }
@@ -154,9 +161,9 @@ void BTS::activity() {
             if ((dblPower > 0) && (iConnections < iSlots)) // if it sees the ms and has free slot
                     {
                 handover_data = new cMessage("HANDOVER_DATA", HANDOVER_DATA);
-                handover_data->addPar(*new cPar("ms") = iClientAddr);
-                handover_data->addPar(*new cPar("src") = iDest);
-                handover_data->addPar(*new cPar("watt") = dblPower);
+                handover_data->addPar(*new cMsgPar("ms") = iClientAddr);
+                handover_data->addPar(*new cMsgPar("src") = iDest);
+                handover_data->addPar(*new cMsgPar("watt") = dblPower);
                 ev << "Sending HANDOVER_DATA with watt " << dblPower
                         << " to BSC\n";
                 send(handover_data, "to_bsc");
@@ -172,9 +179,9 @@ void BTS::activity() {
             if ((dblPower < 0) || (dblPower < dblWatt * HANDOVER_LIMIT)) {
                 // Check for handover
                 handover_chk = new cMessage("HANDOVER_CHK", HANDOVER_CHK);
-                handover_chk->addPar(*new cPar("ms") = iClientAddr);
-                handover_chk->addPar(*new cPar("src") = iDest);
-                handover_chk->addPar(*new cPar("watt") = dblPower);
+                handover_chk->addPar(*new cMsgPar("ms") = iClientAddr);
+                handover_chk->addPar(*new cMsgPar("src") = iDest);
+                handover_chk->addPar(*new cMsgPar("watt") = dblPower);
                 ev << "Sending HANDOVER_CHK to BSC\n";
                 send(handover_chk, "to_bsc");
             }

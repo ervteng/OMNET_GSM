@@ -4,16 +4,22 @@
 //-------------------------------------------------------------
 
 #include "gsmsim.h"
+#include <omnetpp.h>
 
 // The BSC object
 class BSC: public cSimpleModule {
-    Module_Class_Members(BSC,cSimpleModule,16384)
-    virtual void activity();
-    virtual void destroy();
-    double *iWatts;              // Buffer to hold the max. watts for the phones
-    int *iBTS;                          // Buffer to hold the bts for the phones
+    //Module_Class_Members(BSC,cSimpleModule,16384);
+    public:
+        BSC();
+    protected:
+        virtual void activity();
+        virtual void destroy();
+    private:
+        double *iWatts;              // Buffer to hold the max. watts for the phones
+        int *iBTS;                          // Buffer to hold the bts for the phones
 };
 
+BSC::BSC() : cSimpleModule(16384) {}
 Define_Module(BSC);
 
 // End of simulation
@@ -37,15 +43,15 @@ void BSC::activity() {
     cPar& iPhones = par("phones");                   // Get the number of phones
     cPar& numbts = par("numbts");                    // Get the number of bts
     int num_bts = numbts;
-    iWatts = new double[iPhones];                        // Allocate buffers
-    iBTS = new int[iPhones];                            // Allocate buffers
+    iWatts = new double[iPhones.longValue()];                        // Allocate buffers
+    iBTS = new int[iPhones.longValue()];                            // Allocate buffers
 
     counter = simTime();
 
     for (;;) {
         // receive msg
         msg = receive();
-        iType = msg->kind();
+        iType = msg->getKind();
         switch (iType) {
 
         case HANDOVER_END:            // We must decide, which bts is the winner
@@ -60,20 +66,20 @@ void BSC::activity() {
                             << iBTS[iMS] << "\n";
                     handover_bts_disc = new cMessage("HANDOVER_BTS_DISC",
                             HANDOVER_BTS_DISC);
-                    handover_bts_disc->addPar(*new cPar("newbts")) = iBTS[iMS];
-                    handover_bts_disc->addPar(*new cPar("src")) = 0;
-                    handover_bts_disc->addPar(*new cPar("dest")) = i;
-                    handover_bts_disc->addPar(*new cPar("ms")) = iMS;
+                    handover_bts_disc->addPar(*new cMsgPar("newbts")) = iBTS[iMS];
+                    handover_bts_disc->addPar(*new cMsgPar("src")) = 0;
+                    handover_bts_disc->addPar(*new cMsgPar("dest")) = i;
+                    handover_bts_disc->addPar(*new cMsgPar("ms")) = iMS;
                     send(handover_bts_disc, "to_bts", i);
                 }
             } else {
                 // No BTS to hand over, send disconnect to BTS and MS
                 handover_bts_disc = new cMessage("HANDOVER_BTS_DISC",
                         HANDOVER_BTS_DISC);
-                handover_bts_disc->addPar(*new cPar("newbts")) = -1;
-                handover_bts_disc->addPar(*new cPar("src")) = 0;
-                handover_bts_disc->addPar(*new cPar("dest")) = i;
-                handover_bts_disc->addPar(*new cPar("ms")) = iMS;
+                handover_bts_disc->addPar(*new cMsgPar("newbts")) = -1;
+                handover_bts_disc->addPar(*new cMsgPar("src")) = 0;
+                handover_bts_disc->addPar(*new cMsgPar("dest")) = i;
+                handover_bts_disc->addPar(*new cMsgPar("ms")) = iMS;
                 send(handover_bts_disc, "to_bts", i);
             }
             break;
@@ -93,17 +99,17 @@ void BSC::activity() {
                 if (i != iClientAddr) {
                     force_check_ms = new cMessage("FORCE_CHECK_MS",
                             FORCE_CHECK_MS);
-                    force_check_ms->addPar(*new cPar("dest")) = i;
-                    force_check_ms->addPar(*new cPar("src")) = 0;
-                    force_check_ms->addPar(*new cPar("ms")) = iMS;
+                    force_check_ms->addPar(*new cMsgPar("dest")) = i;
+                    force_check_ms->addPar(*new cMsgPar("src")) = 0;
+                    force_check_ms->addPar(*new cMsgPar("ms")) = iMS;
                     send(force_check_ms, "to_bts", i);
                     ev << "Sending FORCE_CHECK_MS to BTS #" << i << "\n";
                 };
             }
             // Send a scheduled message to myself to decide the handover
             handover_end = new cMessage("HANDOVER_END", HANDOVER_END);
-            handover_end->addPar(*new cPar("ms")) = iMS;
-            handover_end->addPar(*new cPar("bts")) = iClientAddr;
+            handover_end->addPar(*new cMsgPar("ms")) = iMS;
+            handover_end->addPar(*new cMsgPar("bts")) = iClientAddr;
             counter = simTime() + delay;
             scheduleAt(counter, handover_end);
             break;

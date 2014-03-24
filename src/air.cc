@@ -7,9 +7,14 @@
 
 // The Air object
 class Air: public cSimpleModule {
-    Module_Class_Members(Air,cSimpleModule,16384)
-    virtual void activity();
+    public:
+        Air();
+    //Module_Class_Members(Air,cSimpleModule,16384)
+    protected:
+        virtual void activity();
 };
+
+Air::Air() : cSimpleModule(16384) {}
 
 Define_Module(Air);
 
@@ -20,7 +25,7 @@ void Air::activity() {
     for (;;) {
         // receive msg
         cMessage *msg = receive();
-        iType = msg->kind();
+        iType = msg->getKind();
         // send msg to destination
         switch (iType) {
         // MS->BTS
