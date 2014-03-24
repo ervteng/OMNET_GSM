@@ -1,0 +1,4 @@
+#!/bin/sh
+cd `dirname $0`
+../src/gsm_sim -n .:../src $*
+# for shared lib, use: opp_run -l ../src/gsm_sim -n .:../src $*
