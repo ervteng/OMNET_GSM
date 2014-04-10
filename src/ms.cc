@@ -13,7 +13,8 @@ class MS : public cSimpleModule
     public:
         MS();
     protected:
-        virtual void activity();
+        virtual void initialize();
+        virtual void handleMessage(cMessage *msg);
         virtual void finish();
     private:
         int iMissedCalls;               // number of missed calls
@@ -22,12 +23,64 @@ class MS : public cSimpleModule
         int iHandover;               // number of handovers
         int own_addr;                   // index of gate to which we are connected
         int connected;                  // BTS number if connected
+        int status;                     // Finite state machine
+        int i;                        // the number of bts
+        int type;                       // message type                          // program state                          // number of handovers
+        double delay;
+        double dblTemp;
+        // Query module parameters
+        double xc;
+        double yc;
+        int vx;
+        int vy;
+        double callinterval;
+        double calllength;
+        double timeout;
+        FILE *out;
+
+        cMessage *conn_req,*disc_req,*movecar,*allmsg;
+        cMessage *check_bts,*check_ms,*check_line;
+        int selected;
+        int num_bts;
+        SimTime lastmsg;
+        double min;
+        SimTime counter;
+        SimTime alltime;
+        cMessage *nextCall;
+
 };
 
-Define_Module( MS );
+Define_Module(MS);
 
-MS::MS() : cSimpleModule(16384) {}
+MS::MS(){}
 
+void MS::initialize(){
+    status=MOVE_CAR;                            // program state                          // number of handovers
+    delay=1.0;
+    // Query module parameters
+    xc = (double) par( "xc" );
+    yc = (double) par( "yc" );
+    vx = par( "vx" );
+    vy = par( "vy" );
+    connected = -1;
+    callinterval = CALL_INTERVAL_MIN + exponential(CALL_INTERVAL);
+    calllength = CALL_LENGTH_MIN + exponential(CALL_LENGTH);
+    timeout = par ( "timeout" );
+    FILE *out;
+    // assign address: index of gate to which we are connected
+    own_addr = gate( "to_air" )->getNextGate()->getIndex();
+    selected=0;
+    num_bts = 0;
+
+    movecar = new cMessage("MOVE_CAR",MOVE_CAR);    // send the first scheduled move message
+    //SimTime counter = simTime()+delay;
+
+    nextCall = new cMessage("make_call");
+    scheduleAt(callinterval, nextCall);
+
+    counter = simTime()+delay;
+    scheduleAt(counter,movecar);
+}
 // Write the logs at the end of the simulation
 void MS::finish()
 {
@@ -58,50 +111,10 @@ void MS::finish()
     fclose(out);
 }
 
-void MS::activity()
+void MS::handleMessage(cMessage *msg)
 {
-    int i=0;                                        // the number of bts
-    int type;                                       // message type
-    int status=MOVE_CAR;                            // program state
-    iMissedCalls=0;                                 // number of missed calls
-    iCalls=0;                                       // number of calls
-    iBroken = 0;                                    // number of broken calls
-    iHandover = 0;                                  // number of handovers
-    double delay=1.0;
-    double dblTemp;
-    // Query module parameters
-    double xc = (double) par( "xc" );
-    double yc = (double) par( "yc" );
-    int vx = par( "vx" );int vy = par( "vy" );
-    connected = -1;
-    double callinterval = CALL_INTERVAL_MIN + exponential(CALL_INTERVAL);
-    double calllength = CALL_LENGTH_MIN + exponential(CALL_LENGTH);
-    double timeout = par ( "timeout" );
-    FILE *out;
-
-    cMessage *conn_req,*disc_req,*movecar,*allmsg;
-    cMessage *check_bts,*check_ms,*check_line;
-
-    // assign address: index of gate to which we are connected
-    own_addr = gate( "to_air" )->getNextGate()->getIndex();
-    int selected=0;
-    int num_bts = 0;
-    double min;                                        // to store the best station's data
-    simtime_t counter,lastmsg,alltime=0;
-
-    cPar& nbts = par ( "numbts" );
-    num_bts = nbts.longValue();
-
-    movecar = new cMessage("MOVE_CAR",MOVE_CAR);    // send the first scheduled move message
-    counter = simTime()+delay;
-    scheduleAt(counter,movecar);
-
-    for(;;)
-    {
-         // keep an interval between subsequent connections
-        allmsg=receive();
-        type = allmsg->getKind();
-        switch (type)
+    type = msg->getKind();
+    switch (type)
         {
         case MOVE_CAR:
             xc+=(double) delay*vx;                    // new posx=delay*vx
@@ -192,12 +205,14 @@ void MS::activity()
             };
             break;
 
+        // First case ends
+
         case BTS_DATA:                                // Information from a BTS
-            dblTemp = allmsg->par("data");            // Watt
+            dblTemp = msg->par("data");            // Watt
             if (dblTemp > min)                        // More then the best
             {
-                min=allmsg->par("data");
-                selected=allmsg->par("src");
+                min=msg->par("data");
+                selected=msg->par("src");
             };
             if (i < num_bts-1)                        // If not all BTS checked
             {
@@ -238,7 +253,7 @@ void MS::activity()
 
         case CONN_ACK:                                // Connection acknowledgement from BTS
             ev << "got CONN_ACK\n";
-            i=allmsg->par("src");
+            i=msg->par("src");
             connected = selected;                    // Connected to this BTS
             ev << "Talking with station #" << i << '\n';
             status=CONN_ACK;
@@ -277,7 +292,7 @@ void MS::activity()
             ev << "got CHECK_MS\n";
             check_ms = new cMessage( "MS_DATA",MS_DATA);
             check_ms->addPar( *new cMsgPar("src") = own_addr);
-            check_ms->addPar( *new cMsgPar("dest") = allmsg->par("src"));
+            check_ms->addPar( *new cMsgPar("dest") = msg->par("src"));
             check_ms->addPar( *new cMsgPar("xc")  = xc );
             check_ms->addPar( *new cMsgPar("yc")  = yc );
             send( check_ms, "to_air" );                // Send back the current position
@@ -287,7 +302,7 @@ void MS::activity()
             if (connected > -1)
             {
                 ev << "got HANDOVER_MS \n";
-                selected = allmsg->par("newbts");
+                selected = msg->par("newbts");
                 ev << "sending CONN_REQ to #" << selected << '\n';
                 conn_req = new cMessage( "CONN_REQ",CONN_REQ);// Sending connection request to new bts
                 conn_req->addPar( *new cMsgPar("src") = own_addr);
@@ -301,35 +316,33 @@ void MS::activity()
                 fclose(out);
             }
             break;
-        };
+        }
 
-        // If it's due then make a call
         if ((alltime>=(double)callinterval)&&(status==MOVE_CAR))
-        {
-            alltime=0;
-                                                    // Search for the best station
-            min=0.0;selected=-1;
-            i=0;
-            check_bts = new cMessage( "CHECK_BTS", CHECK_BTS );
-            check_bts->addPar( *new cMsgPar("src")  = own_addr );
-            check_bts->addPar( *new cMsgPar("xc")  = xc );
-            check_bts->addPar( *new cMsgPar("yc")  = yc );
-            check_bts->addPar( *new cMsgPar("dest") = i );
-            ev << "Sending CHECK_BTS to #" << i << '\n';
-            send( check_bts, "to_air" );            // Send the first BTS check message
-            status=CHECK_BTS;                        // New state
-            lastmsg=simTime();
-        };
-        // If it's due then terminate the call
+            {
+                alltime=0;
+                                                        // Search for the best station
+                min=0.0;selected=-1;
+                i=0;
+                check_bts = new cMessage( "CHECK_BTS", CHECK_BTS );
+                check_bts->addPar( *new cMsgPar("src")  = own_addr );
+                check_bts->addPar( *new cMsgPar("xc")  = xc );
+                check_bts->addPar( *new cMsgPar("yc")  = yc );
+                check_bts->addPar( *new cMsgPar("dest") = i );
+                ev << "Sending CHECK_BTS to #" << i << '\n';
+                send( check_bts, "to_air" );            // Send the first BTS check message
+                status=CHECK_BTS;                        // New state
+                lastmsg=simTime();
+            };
+            // If it's due then terminate the call
         if ((alltime>=(double)calllength)&&(status==CONN_ACK))
-        {
-            ev << "sending DISC_REQ\n";
-            disc_req = new cMessage( "DISC_REQ", DISC_REQ );
-            disc_req->addPar("src") = own_addr;
-            disc_req->addPar("dest") = connected;
-            send( disc_req, "to_air" );                // Send disconnect request to the BTS
-            lastmsg=simTime();
-            status=DISC_REQ;
-        };
-    }; // end of endless loop :)
+            {
+                ev << "sending DISC_REQ\n";
+                disc_req = new cMessage( "DISC_REQ", DISC_REQ );
+                disc_req->addPar("src") = own_addr;
+                disc_req->addPar("dest") = connected;
+                send( disc_req, "to_air" );                // Send disconnect request to the BTS
+                lastmsg=simTime();
+                status=DISC_REQ;
+            };
 }
