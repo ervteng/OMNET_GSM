@@ -4,19 +4,24 @@
 //-------------------------------------------------------------
 
 #include "gsmsim.h"
-
-// The Air object
-class Air: public cSimpleModule {
-    public:
-        Air();
-    //Module_Class_Members(Air,cSimpleModule,16384)
-    protected:
-        virtual void activity();
-};
-
-Air::Air() : cSimpleModule(16384) {}
+#include "air.h"
 
 Define_Module(Air);
+
+Air::Air() : cSimpleModule()
+{
+    // TODO
+}
+
+void Air::initialize()
+{
+
+}
+
+void Air::handleMessage(cMessage *msg)
+{
+
+}
 
 void Air::activity() {
     int iType, iDest;
