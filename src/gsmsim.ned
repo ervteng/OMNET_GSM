@@ -13,14 +13,14 @@ import inet.world.radio.ChannelControl;
 //
 // Declaration of simple module type Air (interface)
 //
-simple Air
-{
-    gates:
-        input from_ms[]; // input and output gates
-        input from_bts[]; // for communication between MS and BTS
-        output to_ms[];
-        output to_bts[];
-}
+//simple Air
+//{
+//    gates:
+//        input from_ms[]; // input and output gates
+//        input from_bts[]; // for communication between MS and BTS
+//        output to_ms[];
+//        output to_bts[];
+//}
 
 
 //
@@ -61,15 +61,15 @@ network GSMSIM
         double xwidth = default(10000);
         double ydepth = default(10000);
     submodules:
-        air: Air {
-            parameters:
-                @display("p=120,180;i=cloud");
-            gates:
-                to_ms[number_ms];
-                from_ms[number_ms];
-                to_bts[number_bts];
-                from_bts[number_bts];
-        }
+//        air: Air {
+//            parameters:
+//                @display("p=120,180;i=cloud");
+//            gates:
+//                to_ms[number_ms];
+//                from_ms[number_ms];
+//                to_bts[number_bts];
+//                from_bts[number_bts];
+//        }
             //parameters:
            		//@display("p=120,180;i=cloud");
         //}
@@ -94,32 +94,27 @@ network GSMSIM
                 ms_logic.vy = default(5); // velocity y [m/s]
                 ms_logic.numbts = number_bts;
                 ms_logic.timeout = 1s;
-                @display("p=30,240;r=,,#707070");
+                //@display("p=30,240;r=,,#707070");
         }
-        bts[number_bts]: BTS {
+        bts[number_bts]: BTS_v2 {
             parameters:
-                phones = number_ms;
+                bts_logic.phones = number_ms;
                 //xc = input(10000,"X coordinate"), // X coordinate
                 // yc = input(10000,"Y coordinate"), // Y coordinate
-                xc = default(10000); // X coordinate
-                yc = default(10000); // Y coordinate
+                bts_logic.xc = default(10000); // X coordinate
+                bts_logic.yc = default(10000); // Y coordinate
                 //slots = input(3,"Max. users"); // how many users it can hold
-                slots = default(3); // how many users it can hold
-                @display("p=30,120;i=ipc");
+                bts_logic.slots = default(3); // how many users it can hold
+                @display("p=30,120");
         }
         channelControl: ChannelControl {
+            coreDebug = true;
             @display("p=60,50");
         }
 
     connections: // make all the connection between the objects
-        for i=0..number_ms-1 {
-            ms[i].to_air --> air.from_ms[i];
-            ms[i].from_air <-- air.to_ms[i];
-        }
         //endfor; 
         for i=0..number_bts-1 {
-            air.to_bts[i] --> bts[i].from_air;
-            air.from_bts[i] <-- bts[i].to_air;
             bts[i].to_bsc --> bsc.from_bts[i];
             bts[i].from_bsc <-- bsc.to_bts[i];
         }

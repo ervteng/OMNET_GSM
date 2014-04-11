@@ -19,46 +19,57 @@ package gsm_sim;
 
 import inet.mobility.models.StationaryMobility;
 import inet.linklayer.radio.GenericRadio;
+import inet.base.NotificationBoard;
 //
 // TODO auto-generated module
 //
-module bts_v2
+module BTS_v2
 {
     parameters:
-    	@node();
+        @node();
         @labels(node);
         @display("i=ipc");
         //string imsi = default("00101");
         double initialX = default(0);
         double initialY = default(0);
     gates:
-        input from_air; // gate for connecting to BTS
-        output to_air; // gate for connecting to BTS 
         input from_bsc;
         output to_bsc;
         input radioIn @directIn;
     submodules:
-        bts_mac: BTS{
+        bts_logic: BTS {
             parameters:
                 @display("p=71,110");
-        }        
+        }
+        mac: GSMMac {
+            parameters:
+                @display("p=71,175");
+        }
+        notificationBoard: NotificationBoard {
+            parameters:
+                @display("p=32,30");
+        }
         mobility: StationaryMobility {
             parameters:
-                @display("p=90,40");
+                @display("p=110,38");
         }
-        radio: GenericRadio{
+        radio: GSMRadioModule {
             parameters:
                 bandwidth = 200000Hz;
                 modulation = "BPSK";// This is inaccurate, but we use for now
-                @display("p=71,170");
+                headerLengthBits = 8b;
+                bitrate = 10000bps;
+                @display("p=71,250");
         }
-        
+
     connections:
-        radio.upperLayerIn <-- bts_mac.to_air;
-        radio.upperLayerOut --> bts_mac.from_air;
+        radio.upperLayerIn <-- mac.toRadio;
+        radio.upperLayerOut --> mac.fromRadio;
+        mac.upperLayerOut --> bts_logic.from_air;
+        mac.upperLayerIn <-- bts_logic.to_air;
         radioIn --> { @display("m=s"); } --> radio.radioIn;
-        
-        from_bsc --> bts_mac.from_bsc;
-        to_bsc <-- bts_mac.to_bsc;
-        
+
+        from_bsc --> bts_logic.from_bsc;
+        to_bsc <-- bts_logic.to_bsc;
+
 }

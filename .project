@@ -3,6 +3,7 @@
 	<name>GSM_SIM</name>
 	<comment></comment>
 	<projects>
+		<project>inet</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

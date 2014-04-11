@@ -72,14 +72,15 @@ void MS::initialize(){
     selected=0;
     num_bts = 0;
 
-    movecar = new cMessage("MOVE_CAR",MOVE_CAR);    // send the first scheduled move message
+    movecar = new cPacket("MOVE_CAR",MOVE_CAR);    // send the first scheduled move message
     //SimTime counter = simTime()+delay;
 
-    nextCall = new cMessage("make_call");
+    nextCall = new cPacket("make_call");
     scheduleAt(callinterval, nextCall);
 
     counter = simTime()+delay;
-    scheduleAt(counter,movecar);
+    scheduleAt(simTime(),movecar);
+    callinterval = 0.1;
 }
 // Write the logs at the end of the simulation
 void MS::finish()
@@ -120,7 +121,7 @@ void MS::handleMessage(cMessage *msg)
             xc+=(double) delay*vx;                    // new posx=delay*vx
             yc+=(double) delay*vy;                    // new posy=delay*vy
             alltime+=delay;
-            movecar = new cMessage("MOVE_CAR",MOVE_CAR);// send new scheduled message
+            movecar = new cPacket("MOVE_CAR",MOVE_CAR);// send new scheduled message
             counter = simTime()+delay;
             scheduleAt(counter,movecar);
             switch (status)
@@ -131,7 +132,7 @@ void MS::handleMessage(cMessage *msg)
                     if (i<num_bts-1)                // if not all BTS checked
                     {
                         i++;                        // send new check message
-                        check_bts=new cMessage("CHECK_BTS",CHECK_BTS);
+                        check_bts=new cPacket("CHECK_BTS",CHECK_BTS);
                         check_bts->addPar( *new cMsgPar("src") =own_addr);
                         check_bts->addPar( *new cMsgPar("xc") =xc);
                         check_bts->addPar( *new cMsgPar("yc") =yc);
@@ -143,7 +144,7 @@ void MS::handleMessage(cMessage *msg)
                     if (selected>-1)                // there's an available BTS
                     {
                         ev << "sending CONN_REQ to #" << i << '\n';
-                        conn_req = new cMessage( "CONN_REQ",CONN_REQ);
+                        conn_req = new cPacket( "CONN_REQ",CONN_REQ);
                         conn_req->addPar( *new cMsgPar("src") =own_addr);
                         conn_req->addPar( *new cMsgPar("dest")=selected);
                         send( conn_req, "to_air" );    // Send connection request
@@ -194,7 +195,7 @@ void MS::handleMessage(cMessage *msg)
                 break;
 
             case CONN_ACK:                            // Check for handover periodically
-                check_line = new cMessage("CHECK_LINE",CHECK_LINE);
+                check_line = new cPacket("CHECK_LINE",CHECK_LINE);
                 check_line->addPar( *new cMsgPar("src") = own_addr);
                 check_line->addPar( *new cMsgPar("xc")  = xc );
                 check_line->addPar( *new cMsgPar("yc")  = yc );
@@ -217,7 +218,7 @@ void MS::handleMessage(cMessage *msg)
             if (i < num_bts-1)                        // If not all BTS checked
             {
                 i++;
-                check_bts = new cMessage("CHECK_BTS",CHECK_BTS);
+                check_bts = new cPacket("CHECK_BTS",CHECK_BTS);
                 check_bts->addPar( *new cMsgPar("src") = own_addr);
                 check_bts->addPar( *new cMsgPar("xc")  = xc );
                 check_bts->addPar( *new cMsgPar("yc")  = yc );
@@ -229,7 +230,7 @@ void MS::handleMessage(cMessage *msg)
             if (selected > -1)                        // We have a good BTS, let's connect
             {
                 ev << "sending CONN_REQ to #" << i << '\n';
-                conn_req = new cMessage( "CONN_REQ",CONN_REQ);
+                conn_req = new cPacket( "CONN_REQ",CONN_REQ);
                 conn_req->addPar( *new cMsgPar("src") = own_addr);
                 conn_req->addPar( *new cMsgPar("dest") = selected);
                 send( conn_req, "to_air" );            // Send connection request
@@ -290,7 +291,7 @@ void MS::handleMessage(cMessage *msg)
 
         case CHECK_MS:                                // Check MS for handover
             ev << "got CHECK_MS\n";
-            check_ms = new cMessage( "MS_DATA",MS_DATA);
+            check_ms = new cPacket( "MS_DATA",MS_DATA);
             check_ms->addPar( *new cMsgPar("src") = own_addr);
             check_ms->addPar( *new cMsgPar("dest") = msg->par("src"));
             check_ms->addPar( *new cMsgPar("xc")  = xc );
@@ -304,7 +305,7 @@ void MS::handleMessage(cMessage *msg)
                 ev << "got HANDOVER_MS \n";
                 selected = msg->par("newbts");
                 ev << "sending CONN_REQ to #" << selected << '\n';
-                conn_req = new cMessage( "CONN_REQ",CONN_REQ);// Sending connection request to new bts
+                conn_req = new cPacket( "CONN_REQ",CONN_REQ);// Sending connection request to new bts
                 conn_req->addPar( *new cMsgPar("src") = own_addr);
                 conn_req->addPar( *new cMsgPar("dest") = selected);
                 send( conn_req, "to_air" );
@@ -324,7 +325,7 @@ void MS::handleMessage(cMessage *msg)
                                                         // Search for the best station
                 min=0.0;selected=-1;
                 i=0;
-                check_bts = new cMessage( "CHECK_BTS", CHECK_BTS );
+                check_bts = new cPacket( "CHECK_BTS", CHECK_BTS );
                 check_bts->addPar( *new cMsgPar("src")  = own_addr );
                 check_bts->addPar( *new cMsgPar("xc")  = xc );
                 check_bts->addPar( *new cMsgPar("yc")  = yc );
@@ -338,7 +339,7 @@ void MS::handleMessage(cMessage *msg)
         if ((alltime>=(double)calllength)&&(status==CONN_ACK))
             {
                 ev << "sending DISC_REQ\n";
-                disc_req = new cMessage( "DISC_REQ", DISC_REQ );
+                disc_req = new cPacket( "DISC_REQ", DISC_REQ );
                 disc_req->addPar("src") = own_addr;
                 disc_req->addPar("dest") = connected;
                 send( disc_req, "to_air" );                // Send disconnect request to the BTS

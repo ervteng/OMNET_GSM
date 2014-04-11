@@ -17,43 +17,55 @@ package gsm_sim;
 
 import inet.mobility.models.LinearMobility;
 import inet.linklayer.radio.GenericRadio;
+import inet.base.NotificationBoard;
 //
 // TODO auto-generated module
 //
 module MS_v2
 {
     parameters:
-    	@node();
+        @node();
         @labels(node);
         @display("i=device/cellphone");
         string imsi = default("00101");
         double initialX = default(0);
         double initialY = default(0);
     gates:
-        input from_air; // gate for connecting to BTS
-        output to_air; // gate for connecting to BTS 
         input radioIn @directIn;
     submodules:
-        ms_logic: MS{
+        ms_logic: MS {
             parameters:
                 @display("p=71,110");
-        }        
+        }
+        mac: GSMMac {
+            parameters:
+                @display("p=71,175");
+        }
+        notificationBoard: NotificationBoard {
+            parameters:
+                @display("p=32,31");
+        }
         mobility: LinearMobility {
             parameters:
-                @display("p=90,40");
+                @display("p=130,31");
         }
-        radio: GenericRadio{
+
+        radio: GSMRadioModule {
             parameters:
                 bandwidth = 200000Hz;
                 modulation = "BPSK";// This is inaccurate, but we use for now
-                @display("p=71,170");
+                headerLengthBits = 8b;
+                bitrate = 10000bps;
+                @display("p=71,250");
         }
-        
+
     connections:
-        radio.upperLayerIn <-- ms_logic.to_air;
-        radio.upperLayerOut --> ms_logic.from_air;
+        radio.upperLayerIn <-- mac.toRadio;
+        radio.upperLayerOut --> mac.fromRadio;
+        mac.upperLayerOut --> ms_logic.from_air;
+        mac.upperLayerIn <-- ms_logic.to_air;
         radioIn --> { @display("m=s"); } --> radio.radioIn;
         //from_air --> ms_logic.from_air;
         //to_air <-- ms_logic.to_air;
-        
+
 }
