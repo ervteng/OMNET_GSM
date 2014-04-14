@@ -2,7 +2,7 @@
 # OMNeT++/OMNEST Makefile for OMNET_GSM
 #
 # This file was generated with the command:
-#  opp_makemake -f --deep
+#  opp_makemake -f --deep -I../../inet/src/linklayer/ethernet -I../../inet/src/linklayer/ieee80211/radio -I../../inet/src/networklayer/common -I../../inet/src -I../../inet/src/networklayer/icmpv6 -I../../inet/src/world/obstacles -I../../inet/src/networklayer/xmipv6 -I../../inet/src/networklayer/contract -I../../inet/src/mobility -I../../inet/src/networklayer/manetrouting/base -I../../inet/src/networklayer/autorouting/ipv4 -I../../inet/src/linklayer/ieee80211/mgmt -I../../inet/src/util -I../../inet/src/linklayer/common -I../../inet/src/transport/contract -I../../inet/src/status -I../../inet/src/linklayer/radio/propagation -I../../inet/src/linklayer/ieee80211/radio/errormodel -I../../inet/src/linklayer/radio -I../../inet/src/util/headerserializers/tcp -I../../inet/src/networklayer/ipv4 -I../../inet/src/util/headerserializers/ipv4 -I../../inet/src/base -I../../inet/src/util/headerserializers -I../../inet/src/world/radio -I../../inet/src/linklayer/ieee80211/mac -I../../inet/src/transport/sctp -I../../inet/src/networklayer/ipv6 -I../../inet/src/util/headerserializers/udp -I../../inet/src/networklayer/ipv6tunneling -I../../inet/src/battery/models -I../../inet/src/applications/pingapp -I../../inet/src/linklayer/contract -I../../inet/src/util/headerserializers/sctp -I../../inet/src/transport/tcp_common -I../../inet/src/networklayer/arp -I../../inet/src/transport/udp -L../../inet/out/$$\(CONFIGNAME\)/src -linet -DINET_IMPORT -KINET_PROJ=../../inet
 #
 
 # Name of target to be created (-o option)
@@ -14,13 +14,53 @@ USERIF_LIBS = $(ALL_ENV_LIBS) # that is, $(TKENV_LIBS) $(CMDENV_LIBS)
 #USERIF_LIBS = $(TKENV_LIBS)
 
 # C++ include paths (with -I)
-INCLUDE_PATH = -I.
+INCLUDE_PATH = \
+    -I../../inet/src/linklayer/ethernet \
+    -I../../inet/src/linklayer/ieee80211/radio \
+    -I../../inet/src/networklayer/common \
+    -I../../inet/src \
+    -I../../inet/src/networklayer/icmpv6 \
+    -I../../inet/src/world/obstacles \
+    -I../../inet/src/networklayer/xmipv6 \
+    -I../../inet/src/networklayer/contract \
+    -I../../inet/src/mobility \
+    -I../../inet/src/networklayer/manetrouting/base \
+    -I../../inet/src/networklayer/autorouting/ipv4 \
+    -I../../inet/src/linklayer/ieee80211/mgmt \
+    -I../../inet/src/util \
+    -I../../inet/src/linklayer/common \
+    -I../../inet/src/transport/contract \
+    -I../../inet/src/status \
+    -I../../inet/src/linklayer/radio/propagation \
+    -I../../inet/src/linklayer/ieee80211/radio/errormodel \
+    -I../../inet/src/linklayer/radio \
+    -I../../inet/src/util/headerserializers/tcp \
+    -I../../inet/src/networklayer/ipv4 \
+    -I../../inet/src/util/headerserializers/ipv4 \
+    -I../../inet/src/base \
+    -I../../inet/src/util/headerserializers \
+    -I../../inet/src/world/radio \
+    -I../../inet/src/linklayer/ieee80211/mac \
+    -I../../inet/src/transport/sctp \
+    -I../../inet/src/networklayer/ipv6 \
+    -I../../inet/src/util/headerserializers/udp \
+    -I../../inet/src/networklayer/ipv6tunneling \
+    -I../../inet/src/battery/models \
+    -I../../inet/src/applications/pingapp \
+    -I../../inet/src/linklayer/contract \
+    -I../../inet/src/util/headerserializers/sctp \
+    -I../../inet/src/transport/tcp_common \
+    -I../../inet/src/networklayer/arp \
+    -I../../inet/src/transport/udp \
+    -I. \
+    -Iresults
 
 # Additional object and library files to link with
 EXTRA_OBJS =
 
 # Additional libraries (-L, -l options)
-LIBS =
+LIBS = -L../../inet/out/$(CONFIGNAME)/src  -linet
+LIBS += -Wl,-rpath,`abspath ../../inet/out/$(CONFIGNAME)/src`
 
 # Output directory
 PROJECT_OUTPUT_DIR = ../out
@@ -28,10 +68,20 @@ PROJECTRELATIVE_PATH = src
 O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 
 # Object files for local .cc and .msg files
-OBJS = $O/air.o $O/bsc.o $O/bts.o $O/ms.o
+OBJS = \
+    $O/bts.o \
+    $O/bsc.o \
+    $O/GSMRadioModel.o \
+    $O/ms.o \
+    $O/air.o \
+    $O/GSMRadio.o \
+    $O/GSMMac.o
 
 # Message files
 MSGFILES =
+
+# Other makefile variables (-K)
+INET_PROJ=../../inet
 
 #------------------------------------------------------------------------------
 
@@ -57,7 +107,7 @@ include $(CONFIGFILE)
 OMNETPP_LIB_SUBDIR = $(OMNETPP_LIB_DIR)/$(TOOLCHAIN_NAME)
 OMNETPP_LIBS = -L"$(OMNETPP_LIB_SUBDIR)" -L"$(OMNETPP_LIB_DIR)" -loppmain$D $(USERIF_LIBS) $(KERNEL_LIBS) $(SYS_LIBS)
 
-COPTS = $(CFLAGS)  $(INCLUDE_PATH) -I$(OMNETPP_INCL_DIR)
+COPTS = $(CFLAGS) -DINET_IMPORT $(INCLUDE_PATH) -I$(OMNETPP_INCL_DIR)
 MSGCOPTS = $(INCLUDE_PATH)
 
 # we want to recompile everything if COPTS changes,
@@ -105,22 +155,84 @@ clean:
 	$(Q)-rm -rf $O
 	$(Q)-rm -f OMNET_GSM OMNET_GSM.exe libOMNET_GSM.so libOMNET_GSM.a libOMNET_GSM.dll libOMNET_GSM.dylib
 	$(Q)-rm -f ./*_m.cc ./*_m.h
+	$(Q)-rm -f results/*_m.cc results/*_m.h
 
 cleanall: clean
 	$(Q)-rm -rf $(PROJECT_OUTPUT_DIR)
 
 depend:
 	$(qecho) Creating dependencies...
-	$(Q)$(MAKEDEPEND) $(INCLUDE_PATH) -f Makefile -P\$$O/ -- $(MSG_CC_FILES)  ./*.cc
+	$(Q)$(MAKEDEPEND) $(INCLUDE_PATH) -f Makefile -P\$$O/ -- $(MSG_CC_FILES)  ./*.cc results/*.cc
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
+$O/GSMMac.o: GSMMac.cc \
+	GSMMac.h
+$O/GSMRadio.o: GSMRadio.cc \
+	GSMRadio.h \
+	$(INET_PROJ)/src/base/BasicModule.h \
+	$(INET_PROJ)/src/base/Coord.h \
+	$(INET_PROJ)/src/base/ILifecycle.h \
+	$(INET_PROJ)/src/base/INETDefs.h \
+	$(INET_PROJ)/src/base/INotifiable.h \
+	$(INET_PROJ)/src/base/ModuleAccess.h \
+	$(INET_PROJ)/src/base/NotificationBoard.h \
+	$(INET_PROJ)/src/base/NotifierConsts.h \
+	$(INET_PROJ)/src/linklayer/contract/RadioState.h \
+	$(INET_PROJ)/src/linklayer/radio/AirFrame_m.h \
+	$(INET_PROJ)/src/linklayer/radio/INoiseGenerator.h \
+	$(INET_PROJ)/src/linklayer/radio/IRadioModel.h \
+	$(INET_PROJ)/src/linklayer/radio/ModulationType.h \
+	$(INET_PROJ)/src/linklayer/radio/Radio.h \
+	$(INET_PROJ)/src/linklayer/radio/SnrList.h \
+	$(INET_PROJ)/src/linklayer/radio/propagation/IReceptionModel.h \
+	$(INET_PROJ)/src/util/FWMath.h \
+	$(INET_PROJ)/src/world/annotations/AnnotationManager.h \
+	$(INET_PROJ)/src/world/obstacles/Obstacle.h \
+	$(INET_PROJ)/src/world/obstacles/ObstacleControl.h \
+	$(INET_PROJ)/src/world/radio/ChannelAccess.h \
+	$(INET_PROJ)/src/world/radio/IChannelControl.h
+$O/GSMRadioModel.o: GSMRadioModel.cc \
+	GSMRadioModel.h \
+	$(INET_PROJ)/src/base/Coord.h \
+	$(INET_PROJ)/src/base/INETDefs.h \
+	$(INET_PROJ)/src/linklayer/radio/AirFrame_m.h \
+	$(INET_PROJ)/src/linklayer/radio/IModulation.h \
+	$(INET_PROJ)/src/linklayer/radio/IRadioModel.h \
+	$(INET_PROJ)/src/linklayer/radio/Modulation.h \
+	$(INET_PROJ)/src/linklayer/radio/ModulationType.h \
+	$(INET_PROJ)/src/linklayer/radio/SnrList.h \
+	$(INET_PROJ)/src/util/FWMath.h
 $O/air.o: air.cc \
 	gsmsim.h
 $O/bsc.o: bsc.cc \
 	gsmsim.h
 $O/bts.o: bts.cc \
 	bts.h \
-	gsmsim.h
+	GSMRadio.h \
+	gsmsim.h \
+	$(INET_PROJ)/src/base/BasicModule.h \
+	$(INET_PROJ)/src/base/Coord.h \
+	$(INET_PROJ)/src/base/ILifecycle.h \
+	$(INET_PROJ)/src/base/INETDefs.h \
+	$(INET_PROJ)/src/base/INotifiable.h \
+	$(INET_PROJ)/src/base/ModuleAccess.h \
+	$(INET_PROJ)/src/base/NotificationBoard.h \
+	$(INET_PROJ)/src/base/NotifierConsts.h \
+	$(INET_PROJ)/src/linklayer/contract/RadioState.h \
+	$(INET_PROJ)/src/linklayer/radio/AirFrame_m.h \
+	$(INET_PROJ)/src/linklayer/radio/INoiseGenerator.h \
+	$(INET_PROJ)/src/linklayer/radio/IRadioModel.h \
+	$(INET_PROJ)/src/linklayer/radio/ModulationType.h \
+	$(INET_PROJ)/src/linklayer/radio/Radio.h \
+	$(INET_PROJ)/src/linklayer/radio/Radio80211aControlInfo_m.h \
+	$(INET_PROJ)/src/linklayer/radio/SnrList.h \
+	$(INET_PROJ)/src/linklayer/radio/propagation/IReceptionModel.h \
+	$(INET_PROJ)/src/util/FWMath.h \
+	$(INET_PROJ)/src/world/annotations/AnnotationManager.h \
+	$(INET_PROJ)/src/world/obstacles/Obstacle.h \
+	$(INET_PROJ)/src/world/obstacles/ObstacleControl.h \
+	$(INET_PROJ)/src/world/radio/ChannelAccess.h \
+	$(INET_PROJ)/src/world/radio/IChannelControl.h
 $O/ms.o: ms.cc \
 	gsmsim.h
 

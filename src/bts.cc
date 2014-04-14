@@ -6,6 +6,8 @@
 #include "gsmsim.h"
 #include "bts.h"
 #include <math.h>
+#include "GSMRadio.h"
+#include "Radio80211aControlInfo_m.h"
 
 Define_Module(BTS);
 
@@ -37,20 +39,33 @@ void BTS::destroy() {
         delete iPhoneState;            // Release dynamic buffer
 }
 
-double BTS::CalculateWatt(double dblMSXc, double dblMSYc) {
+double BTS::CalculateWatt(double dblMSXc, double dblMSYc, double recPower) {
     double dblDistance;
 
     dblDistance = sqrt(
             (dblXc - dblMSXc) * (dblXc - dblMSXc)
                     + (dblYc - dblMSYc) * (dblYc - dblMSYc));
-    if (dblDistance < dblRadius)                    // if it sees the ms
-            {
-        return ((dblRadius - dblDistance) * dblWatt / dblRadius);
-    } else {
+
+    //GSMRadio* myRadio =  (GSMRadio*) this->getParentModule()->getSubmodule("radio");
+
+    //EV << "ParentModule is" << myRadio;
+    //GSMRadio* myRadio2 = dynamic_cast<GSMRadio *>(myRadio);
+    //double rssi = 0;
+    //rssi = myRadio->getRSSI();
+//    if (dblDistance < dblRadius)                    // if it sees the ms
+//            {
+//        return ((dblRadius - dblDistance) * dblWatt / dblRadius);
+//    }
+    //EV << "Current received signal is" << rssi << "\n";
+    if (recPower > 10)                    // if it sees the ms
+    {
+         //return ((dblRadius - dblDistance) * dblWatt / dblRadius);
+        return recPower;
+    }
+    else {
         return -1;
     }
 }
-
 
 void BTS::handleMessage(cMessage *msg)
 {
