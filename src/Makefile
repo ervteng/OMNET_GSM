@@ -1,12 +1,12 @@
 #
-# OMNeT++/OMNEST Makefile for GSM_SIM
+# OMNeT++/OMNEST Makefile for OMNET_GSM
 #
 # This file was generated with the command:
 #  opp_makemake -f --deep
 #
 
 # Name of target to be created (-o option)
-TARGET = GSM_SIM$(EXE_SUFFIX)
+TARGET = OMNET_GSM$(EXE_SUFFIX)
 
 # User interface (uncomment one) (-u option)
 USERIF_LIBS = $(ALL_ENV_LIBS) # that is, $(TKENV_LIBS) $(CMDENV_LIBS)
@@ -28,7 +28,7 @@ PROJECTRELATIVE_PATH = src
 O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 
 # Object files for local .cc and .msg files
-OBJS = $O/bts.o $O/bsc.o $O/ms.o $O/air.o
+OBJS = $O/air.o $O/bsc.o $O/bts.o $O/ms.o
 
 # Message files
 MSGFILES =
@@ -103,7 +103,7 @@ msgheaders: $(MSGFILES:.msg=_m.h)
 clean:
 	$(qecho) Cleaning...
 	$(Q)-rm -rf $O
-	$(Q)-rm -f GSM_SIM GSM_SIM.exe libGSM_SIM.so libGSM_SIM.a libGSM_SIM.dll libGSM_SIM.dylib
+	$(Q)-rm -f OMNET_GSM OMNET_GSM.exe libOMNET_GSM.so libOMNET_GSM.a libOMNET_GSM.dll libOMNET_GSM.dylib
 	$(Q)-rm -f ./*_m.cc ./*_m.h
 
 cleanall: clean
@@ -119,6 +119,7 @@ $O/air.o: air.cc \
 $O/bsc.o: bsc.cc \
 	gsmsim.h
 $O/bts.o: bts.cc \
+	bts.h \
 	gsmsim.h
 $O/ms.o: ms.cc \
 	gsmsim.h
