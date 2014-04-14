@@ -39,7 +39,7 @@ void BTS::destroy() {
         delete iPhoneState;            // Release dynamic buffer
 }
 
-double BTS::CalculateWatt(double dblMSXc, double dblMSYc, double recPower) {
+double BTS::calculateWatt(double dblMSXc, double dblMSYc, double recPower) {
     double dblDistance;
 
     dblDistance = sqrt(
@@ -63,6 +63,20 @@ double BTS::CalculateWatt(double dblMSXc, double dblMSYc, double recPower) {
         return recPower;
     }
     else {
+        return -1;
+    }
+}
+
+double BTS::calculateWatt(double dblMSXc, double dblMSYc) {
+    double dblDistance;
+
+    dblDistance = sqrt(
+            (dblXc - dblMSXc) * (dblXc - dblMSXc)
+                    + (dblYc - dblMSYc) * (dblYc - dblMSYc));
+    if (dblDistance < dblRadius)                    // if it sees the ms
+            {
+        return ((dblRadius - dblDistance) * dblWatt / dblRadius);
+    } else {
         return -1;
     }
 }
@@ -117,7 +131,7 @@ void BTS::processMsgCheckBtsFromMs(cMessage *msg)
     msg->setKind(BTS_DATA);
     msg->par("dest") = iClientAddr;
     msg->par("src") = iDest;
-    double dblPower = CalculateWatt(dblMSXc, dblMSYc);
+    double dblPower = calculateWatt(dblMSXc, dblMSYc);
     if ((dblPower > 0) && (iConnections < iSlots)) // if it sees the ms and has free slot
             {
         msg->addPar(*new cMsgPar("data") = dblPower);
@@ -192,7 +206,7 @@ void BTS::processMsgDataFromMs(cMessage *msg)
     msg->setKind(BTS_DATA);
     msg->par("dest") = iClientAddr;
     msg->par("src") = iDest;
-    double dblPower = CalculateWatt(dblMSXc, dblMSYc);
+    double dblPower = calculateWatt(dblMSXc, dblMSYc);
     if ((dblPower > 0) && (iConnections < iSlots)) // if it sees the ms and has free slot
             {
         cMessage *handover_data = new cMessage("HANDOVER_DATA", HANDOVER_DATA);
@@ -211,7 +225,7 @@ void BTS::processMsgCheckLineFromMs(cMessage *msg)
     int iDest = msg->par("dest");
     double dblMSXc = msg->par("xc");
     double dblMSYc = msg->par("yc");
-    double dblPower = CalculateWatt(dblMSXc, dblMSYc);
+    double dblPower = calculateWatt(dblMSXc, dblMSYc);
 
     ev << " Watt:" << dblPower << " Watt limit "
        << dblWatt * HANDOVER_LIMIT << "\n";

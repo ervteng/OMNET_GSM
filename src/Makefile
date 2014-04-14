@@ -2,7 +2,7 @@
 # OMNeT++/OMNEST Makefile for OMNET_GSM
 #
 # This file was generated with the command:
-#  opp_makemake -f --deep -I../../inet/src/linklayer/ethernet -I../../inet/src/linklayer/ieee80211/radio -I../../inet/src/networklayer/common -I../../inet/src -I../../inet/src/networklayer/icmpv6 -I../../inet/src/world/obstacles -I../../inet/src/networklayer/xmipv6 -I../../inet/src/networklayer/contract -I../../inet/src/mobility -I../../inet/src/networklayer/manetrouting/base -I../../inet/src/networklayer/autorouting/ipv4 -I../../inet/src/linklayer/ieee80211/mgmt -I../../inet/src/util -I../../inet/src/linklayer/common -I../../inet/src/transport/contract -I../../inet/src/status -I../../inet/src/linklayer/radio/propagation -I../../inet/src/linklayer/ieee80211/radio/errormodel -I../../inet/src/linklayer/radio -I../../inet/src/util/headerserializers/tcp -I../../inet/src/networklayer/ipv4 -I../../inet/src/util/headerserializers/ipv4 -I../../inet/src/base -I../../inet/src/util/headerserializers -I../../inet/src/world/radio -I../../inet/src/linklayer/ieee80211/mac -I../../inet/src/transport/sctp -I../../inet/src/networklayer/ipv6 -I../../inet/src/util/headerserializers/udp -I../../inet/src/networklayer/ipv6tunneling -I../../inet/src/battery/models -I../../inet/src/applications/pingapp -I../../inet/src/linklayer/contract -I../../inet/src/util/headerserializers/sctp -I../../inet/src/transport/tcp_common -I../../inet/src/networklayer/arp -I../../inet/src/transport/udp -L../../inet/out/$$\(CONFIGNAME\)/src -linet -DINET_IMPORT -KINET_PROJ=../../inet
+#  opp_makemake -f --deep -I../../inet/src/linklayer/ethernet -I../../inet/src/linklayer/ieee80211/radio -I../../inet/src/networklayer/common -I../../inet/src -I../../inet/src/networklayer/icmpv6 -I../../inet/src/world/obstacles -I../../inet/src/networklayer/contract -I../../inet/src/mobility -I../../inet/src/networklayer/manetrouting/base -I../../inet/src/networklayer/xmipv6 -I../../inet/src/networklayer/autorouting/ipv4 -I../../inet/src/linklayer/ieee80211/mgmt -I../../inet/src/util -I../../inet/src/linklayer/common -I../../inet/src/transport/contract -I../../inet/src/status -I../../inet/src/linklayer/radio/propagation -I../../inet/src/linklayer/ieee80211/radio/errormodel -I../../inet/src/linklayer/radio -I../../inet/src/util/headerserializers/tcp -I../../inet/src/networklayer/ipv4 -I../../inet/src/util/headerserializers/ipv4 -I../../inet/src/base -I../../inet/src/util/headerserializers -I../../inet/src/world/radio -I../../inet/src/linklayer/ieee80211/mac -I../../inet/src/networklayer/ipv6 -I../../inet/src/transport/sctp -I../../inet/src/util/headerserializers/udp -I../../inet/src/networklayer/ipv6tunneling -I../../inet/src/battery/models -I../../inet/src/applications/pingapp -I../../inet/src/linklayer/contract -I../../inet/src/util/headerserializers/sctp -I../../inet/src/transport/tcp_common -I../../inet/src/networklayer/arp -I../../inet/src/transport/udp -L../../inet/out/$$\(CONFIGNAME\)/src -linet -DINET_IMPORT -KINET_PROJ=../../inet
 #
 
 # Name of target to be created (-o option)
@@ -21,10 +21,10 @@ INCLUDE_PATH = \
     -I../../inet/src \
     -I../../inet/src/networklayer/icmpv6 \
     -I../../inet/src/world/obstacles \
-    -I../../inet/src/networklayer/xmipv6 \
     -I../../inet/src/networklayer/contract \
     -I../../inet/src/mobility \
     -I../../inet/src/networklayer/manetrouting/base \
+    -I../../inet/src/networklayer/xmipv6 \
     -I../../inet/src/networklayer/autorouting/ipv4 \
     -I../../inet/src/linklayer/ieee80211/mgmt \
     -I../../inet/src/util \
@@ -41,8 +41,8 @@ INCLUDE_PATH = \
     -I../../inet/src/util/headerserializers \
     -I../../inet/src/world/radio \
     -I../../inet/src/linklayer/ieee80211/mac \
-    -I../../inet/src/transport/sctp \
     -I../../inet/src/networklayer/ipv6 \
+    -I../../inet/src/transport/sctp \
     -I../../inet/src/util/headerserializers/udp \
     -I../../inet/src/networklayer/ipv6tunneling \
     -I../../inet/src/battery/models \
@@ -52,8 +52,7 @@ INCLUDE_PATH = \
     -I../../inet/src/transport/tcp_common \
     -I../../inet/src/networklayer/arp \
     -I../../inet/src/transport/udp \
-    -I. \
-    -Iresults
+    -I.
 
 # Additional object and library files to link with
 EXTRA_OBJS =
@@ -69,13 +68,13 @@ O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 
 # Object files for local .cc and .msg files
 OBJS = \
-    $O/bts.o \
-    $O/bsc.o \
-    $O/GSMRadioModel.o \
-    $O/ms.o \
     $O/air.o \
+    $O/bsc.o \
+    $O/bts.o \
+    $O/GSMMac.o \
     $O/GSMRadio.o \
-    $O/GSMMac.o
+    $O/GSMRadioModel.o \
+    $O/ms.o
 
 # Message files
 MSGFILES =
@@ -155,14 +154,13 @@ clean:
 	$(Q)-rm -rf $O
 	$(Q)-rm -f OMNET_GSM OMNET_GSM.exe libOMNET_GSM.so libOMNET_GSM.a libOMNET_GSM.dll libOMNET_GSM.dylib
 	$(Q)-rm -f ./*_m.cc ./*_m.h
-	$(Q)-rm -f results/*_m.cc results/*_m.h
 
 cleanall: clean
 	$(Q)-rm -rf $(PROJECT_OUTPUT_DIR)
 
 depend:
 	$(qecho) Creating dependencies...
-	$(Q)$(MAKEDEPEND) $(INCLUDE_PATH) -f Makefile -P\$$O/ -- $(MSG_CC_FILES)  ./*.cc results/*.cc
+	$(Q)$(MAKEDEPEND) $(INCLUDE_PATH) -f Makefile -P\$$O/ -- $(MSG_CC_FILES)  ./*.cc
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 $O/GSMMac.o: GSMMac.cc \
@@ -203,12 +201,14 @@ $O/GSMRadioModel.o: GSMRadioModel.cc \
 	$(INET_PROJ)/src/linklayer/radio/SnrList.h \
 	$(INET_PROJ)/src/util/FWMath.h
 $O/air.o: air.cc \
+	air.h \
 	gsmsim.h
 $O/bsc.o: bsc.cc \
+	bsc.h \
 	gsmsim.h
 $O/bts.o: bts.cc \
-	bts.h \
 	GSMRadio.h \
+	bts.h \
 	gsmsim.h \
 	$(INET_PROJ)/src/base/BasicModule.h \
 	$(INET_PROJ)/src/base/Coord.h \

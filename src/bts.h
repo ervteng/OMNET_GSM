@@ -27,11 +27,12 @@ class BTS: public cSimpleModule {
         virtual void processMsgForceCheckMsFromBsc(cMessage *msg);
         virtual void processMsgDataFromMs(cMessage *msg);
         virtual void processMsgCheckLineFromMs(cMessage *msg);
-        virtual void activity();
+//        virtual void activity();
         virtual void destroy();
 
     private:
-        double CalculateWatt(double dblMSX, double dblMSY); // Calculate current watt
+        double calculateWatt(double dblMSXc, double dblMSYc); // Calculate current watt
+        double calculateWatt(double dblMSXc, double dblMSYc, double recPower); // Calculate current watt
         int iSlots;                                        // How many connection can hold the bts
         int iPhones;                                       // Number of phones
         int iConnections;
