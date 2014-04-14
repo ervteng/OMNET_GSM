@@ -1,0 +1,7 @@
+out/gcc-debug/src/air.o
+out/gcc-debug/src/bsc.o
+out/gcc-debug/src/bts.o
+out/gcc-debug/src/ms.o
+
+
+src/statistic.txt
