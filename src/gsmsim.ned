@@ -8,7 +8,7 @@ package gsm_sim;
 
 import inet.examples.adhoc.hostautoconf.Host;
 import inet.world.radio.ChannelControl;
-
+import ned.DatarateChannel;
 
 //
 // Declaration of simple module type Air (interface)
@@ -36,18 +36,18 @@ import inet.world.radio.ChannelControl;
 
 
 
-//
-// Interface declaration for different modules implementing Base Station Controller
-//
-simple BSC
-{
-    parameters:
-        int phones; // number of phones
-        int numbts; // number of bts
-    gates:
-        input from_bts[]; // gate for connecting to BTS
-        output to_bts[]; // gate for connecting to BTS
-}
+////
+//// Interface declaration for different modules implementing Base Station Controller
+////
+//simple BSC
+//{
+//    parameters:
+//        int phones; // number of phones
+//        int numbts; // number of bts
+//    gates:
+//        input from_bts[]; // gate for connecting to BTS
+//        output to_bts[]; // gate for connecting to BTS
+//}
 
 
 //
@@ -60,6 +60,12 @@ network GSMSIM
         int number_bts = default(1);
         double xwidth = default(10000);
         double ydepth = default(10000);
+    types:
+        channel Abis extends DatarateChannel
+        {
+            delay = 10ms;
+            datarate = 5Mbps;
+        }
     submodules:
 //        air: Air {
 //            parameters:
@@ -77,7 +83,7 @@ network GSMSIM
             parameters:
                 numbts = number_bts;
                 phones = number_ms;
-                @display("p=120,50;i=router");
+                @display("p=309,51;i=router");
             gates:
                 from_bts[number_bts];
                 to_bts[number_bts];
@@ -95,6 +101,7 @@ network GSMSIM
                 ms_logic.numbts = number_bts;
                 ms_logic.timeout = 1s;
                 //@display("p=30,240;r=,,#707070");
+                @display("p=262,201");
         }
         bts[number_bts]: BTS_v2 {
             parameters:

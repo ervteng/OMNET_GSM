@@ -7,12 +7,12 @@
 #include "bsc.h"
 #include <omnetpp.h>
 
-Define_Module(Bsc);
+Define_Module(BSC);
 
-Bsc::Bsc() : cSimpleModule() {}
+BSC::BSC() : cSimpleModule() {}
 
 
-void Bsc::initialize()
+void BSC::initialize()
 {
     delay = 0.4;
     cPar& iPhones = par("phones");                   // Get the number of phones
@@ -24,7 +24,7 @@ void Bsc::initialize()
 
 
 // End of simulation
-void Bsc::destroy() {
+void BSC::destroy() {
     // Release dynamic buffers
     if (iWatts)
         delete iWatts;
@@ -32,21 +32,30 @@ void Bsc::destroy() {
         delete iBTS;
 }
 
-void Bsc::handleMessage(cMessage *msg)
+void BSC::handleMessage(cMessage *msg)
 {
-    int iType = msg->getKind();
-    switch (iType) {
-        case HANDOVER_END: // We must decide, which bts is the winner
-            processHandoverEnd(msg);
-        case HANDOVER_CHK:  // Request to check the MS from the BTSs
-            processHandoverCheck(msg);
-        case HANDOVER_DATA:  // Watt data from BTS
-            processHandoverData(msg);
-
+    int n = getNumParams();
+    for (int i=0; i<n; i++) {
+           cPar& p = par(i);
+           ev << "parameter: " << p.getName() << "\n";
+           ev << "  type:" << cPar::getTypeName(p.getType()) << "\n";
+           ev << "  contains:" << p.str() << "\n";
     }
+
+    int iType = msg->getKind();
+    if (iType == HANDOVER_END){
+        processHandoverEnd(msg);
+    }else if (iType == HANDOVER_CHK){
+        processHandoverCheck(msg);
+    }else if (iType == HANDOVER_DATA){
+        processHandoverData(msg);
+    }else {
+        EV << "No matched message type \n";
+    }
+
 }
 
-void Bsc::processHandoverEnd(cMessage *msg)
+void BSC::processHandoverEnd(cMessage *msg)
 {
     int iMS = msg->par("ms");                    // MS identifier
     int i = msg->par("bts");                    // old BTS identifier
@@ -79,8 +88,9 @@ void Bsc::processHandoverEnd(cMessage *msg)
     }
 }
 
-void Bsc::processHandoverCheck(cMessage *msg)
+void BSC::processHandoverCheck(cMessage *msg)
 {
+    bubble("HandoverCheck");
     int iClientAddr = msg->par("src");            // Old BTS
     int iMS = msg->par("ms");                    // MS
     iWatts[iMS] = msg->par("watt");            // Current watt
@@ -88,15 +98,14 @@ void Bsc::processHandoverCheck(cMessage *msg)
     simtime_t counter = simTime();
 
     if (iWatts[iMS] < 0)     // if current is below zero (no connection)
-            {
+    {
         iBTS[iMS] = -1;             // Set the BTS identifier to invalid
     } else {
         iBTS[iMS] = iClientAddr;            // Set the old BTS number
     }
 
     int i;
-    for (i = 0; i < num_bts; i++)      // Send check request to all BTSs
-            {
+    for (i = 0; i < num_bts; i++){      // Send check request to all BTSs
         if (i != iClientAddr) {
             force_check_ms = new cMessage("FORCE_CHECK_MS",
                     FORCE_CHECK_MS);
@@ -115,7 +124,7 @@ void Bsc::processHandoverCheck(cMessage *msg)
     scheduleAt(counter, handover_end);
 }
 
-void Bsc::processHandoverData(cMessage *msg)
+void BSC::processHandoverData(cMessage *msg)
 {
     int iClientAddr = msg->par("src");
     int iMS = msg->par("ms");

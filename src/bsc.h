@@ -9,10 +9,10 @@
 #define BSC_H_
 
 // The BSC object
-class Bsc: public cSimpleModule {
+class BSC: public cSimpleModule {
     //Module_Class_Members(BSC,cSimpleModule,16384);
     public:
-        Bsc();
+        BSC();
     protected:
         virtual void initialize();
 //        virtual void activity();

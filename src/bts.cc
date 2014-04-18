@@ -17,7 +17,6 @@ BTS::BTS() : cSimpleModule() {
 
 void BTS::initialize()
 {
-    ev << "Calling Initialize()...\n";
     dblXc = par("xc");                          // X coordinate
     dblYc = par("yc");                          // Y coordinate
     dblWatt = par("watt");                      // Watt
@@ -83,11 +82,20 @@ double BTS::calculateWatt(double dblMSXc, double dblMSYc) {
 
 void BTS::handleMessage(cMessage *msg)
 {
+    int n = getNumParams();
+    for (int i=0; i<n; i++) {
+           cPar& p = par(i);
+           ev << "parameter: " << p.getName() << "\n";
+           ev << "  type:" << cPar::getTypeName(p.getType()) << "\n";
+           ev << "  contains:" << p.str() << "\n";
+    }
     if(msg->isSelfMessage()){
-
+        EV << "0000000000000000000000000000\n";
     }else if (msg->getKind() == CONN_REQ){ // Connection request from MS
+        EV << "0000000000000CONN_REQ000000000000000\n";
         processMsgConnReqFromMs(msg);
     }else if (msg->getKind() == CHECK_BTS){  // Check request from the MS
+        EV << "0000000000000CHECK_BTS000000000000000\n";
         processMsgCheckBtsFromMs(msg);
     }else if (msg->getKind() == DISC_REQ){ // Disconnect request from MS
         processMsgDiscReqFromMs(msg);
@@ -109,7 +117,7 @@ void BTS::processMsgConnReqFromMs(cMessage *msg)
     int iClientAddr = msg->par("src");
     if (iConnections < iSlots)                // If there is a free slot
     {
-        ev << "client is addr=" << iClientAddr
+        EV << "client is addr=" << iClientAddr
            << ", sending CONN_ACK free slots left:"
            << iSlots - iConnections - 1 << '\n';
         msg->setName("CONN_ACK");
@@ -131,9 +139,9 @@ void BTS::processMsgCheckBtsFromMs(cMessage *msg)
     msg->setKind(BTS_DATA);
     msg->par("dest") = iClientAddr;
     msg->par("src") = iDest;
-    double dblPower = calculateWatt(dblMSXc, dblMSYc);
+    double dblPower = par("watt");
     if ((dblPower > 0) && (iConnections < iSlots)) // if it sees the ms and has free slot
-            {
+    {
         msg->addPar(*new cMsgPar("data") = dblPower);
         ev << "Sending data to " << iDest;
         send(msg, "to_air");
