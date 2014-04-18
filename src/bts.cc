@@ -39,25 +39,15 @@ void BTS::destroy() {
         delete iPhoneState;            // Release dynamic buffer
 }
 
-double BTS::calculateWatt(double dblMSXc, double dblMSYc, double recPower) {
-    double dblDistance;
+double BTS::calculateWatt(cMessage *msg) {
 
-    dblDistance = sqrt(
-            (dblXc - dblMSXc) * (dblXc - dblMSXc)
-                    + (dblYc - dblMSYc) * (dblYc - dblMSYc));
+    Radio80211aControlInfo *cinfo = dynamic_cast<Radio80211aControlInfo*>(msg->getControlInfo());
+    double recPower  = 0;
+    if(cinfo){
+        recPower = cinfo->getRecPow();
+    }
 
-    //GSMRadio* myRadio =  (GSMRadio*) this->getParentModule()->getSubmodule("radio");
-
-    //EV << "ParentModule is" << myRadio;
-    //GSMRadio* myRadio2 = dynamic_cast<GSMRadio *>(myRadio);
-    //double rssi = 0;
-    //rssi = myRadio->getRSSI();
-//    if (dblDistance < dblRadius)                    // if it sees the ms
-//            {
-//        return ((dblRadius - dblDistance) * dblWatt / dblRadius);
-//    }
-    //EV << "Current received signal is" << rssi << "\n";
-    if (recPower > 10)                    // if it sees the ms
+    if (recPower > -110)                    // if it sees the ms
     {
          //return ((dblRadius - dblDistance) * dblWatt / dblRadius);
         return recPower;
@@ -127,12 +117,15 @@ void BTS::processMsgCheckBtsFromMs(cMessage *msg)
     int iDest = msg->par("dest");
     double dblMSXc = msg->par("xc");
     double dblMSYc = msg->par("yc");
+
+    // Get the received Power
+
     msg->setName("BTS_DATA");
     msg->setKind(BTS_DATA);
     msg->par("dest") = iClientAddr;
     msg->par("src") = iDest;
-    double dblPower = calculateWatt(dblMSXc, dblMSYc);
-    if ((dblPower > 0) && (iConnections < iSlots)) // if it sees the ms and has free slot
+    double dblPower = calculateWatt(msg);
+    if ((dblPower != -1) && (iConnections < iSlots)) // if it sees the ms and has free slot
             {
         msg->addPar(*new cMsgPar("data") = dblPower);
         ev << "Sending data to " << iDest;
@@ -206,8 +199,8 @@ void BTS::processMsgDataFromMs(cMessage *msg)
     msg->setKind(BTS_DATA);
     msg->par("dest") = iClientAddr;
     msg->par("src") = iDest;
-    double dblPower = calculateWatt(dblMSXc, dblMSYc);
-    if ((dblPower > 0) && (iConnections < iSlots)) // if it sees the ms and has free slot
+    double dblPower = calculateWatt(msg);
+    if ((dblPower != -1) && (iConnections < iSlots)) // if it sees the ms and has free slot
             {
         cMessage *handover_data = new cMessage("HANDOVER_DATA", HANDOVER_DATA);
         handover_data->addPar(*new cMsgPar("ms") = iClientAddr);
@@ -225,7 +218,7 @@ void BTS::processMsgCheckLineFromMs(cMessage *msg)
     int iDest = msg->par("dest");
     double dblMSXc = msg->par("xc");
     double dblMSYc = msg->par("yc");
-    double dblPower = calculateWatt(dblMSXc, dblMSYc);
+    double dblPower = calculateWatt(msg);
 
     ev << " Watt:" << dblPower << " Watt limit "
        << dblWatt * HANDOVER_LIMIT << "\n";

@@ -39,7 +39,7 @@ import inet.world.radio.ChannelControl;
 //
 // Interface declaration for different modules implementing Base Station Controller
 //
-simple BSC
+simple Bsc
 {
     parameters:
         int phones; // number of phones
@@ -73,7 +73,7 @@ network GSMSIM
             //parameters:
            		//@display("p=120,180;i=cloud");
         //}
-        bsc: BSC {
+        bsc: Bsc {
             parameters:
                 numbts = number_bts;
                 phones = number_ms;

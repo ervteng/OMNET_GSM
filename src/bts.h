@@ -32,7 +32,7 @@ class BTS: public cSimpleModule {
 
     private:
         double calculateWatt(double dblMSXc, double dblMSYc); // Calculate current watt
-        double calculateWatt(double dblMSXc, double dblMSYc, double recPower); // Calculate current watt
+        double calculateWatt(cMessage *msg); // Calculate current watt using recPower
         int iSlots;                                        // How many connection can hold the bts
         int iPhones;                                       // Number of phones
         int iConnections;
