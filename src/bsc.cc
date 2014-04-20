@@ -97,7 +97,7 @@ void BSC::processHandoverCheck(cMessage *msg)
     cMessage *force_check_ms;
     simtime_t counter = simTime();
 
-    if (iWatts[iMS] < 0)     // if current is below zero (no connection)
+    if (iWatts[iMS] == -1)     // if current is -1 (no connection)
     {
         iBTS[iMS] = -1;             // Set the BTS identifier to invalid
     } else {
@@ -128,12 +128,12 @@ void BSC::processHandoverData(cMessage *msg)
 {
     int iClientAddr = msg->par("src");
     int iMS = msg->par("ms");
-    double iWatt = msg->par("watt");
+    double rssi = msg->par("watt");
     ev << "got HANDOVER_DATA: Client: " << iClientAddr << " MS: " << iMS
-            << " Watt: " << iWatt << " oldWatt:" << iWatts[iMS] << "\n";
-    if ((iWatt > iWatts[iMS]) && (iWatt > 0)) // if it's better then the old then save it
+            << " RSSI: " << rssi << " oldRSSI:" << iWatts[iMS] << "\n";
+    if ((rssi > iWatts[iMS]) && (rssi != -1)) // if it's better then the old then save it
             {
-        iWatts[iMS] = iWatt;
+        iWatts[iMS] = rssi;
         iBTS[iMS] = iClientAddr;
     }
 }

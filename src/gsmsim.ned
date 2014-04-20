@@ -6,9 +6,9 @@ package gsm_sim;
 //-------------------------------------------------------------
 
 
-import inet.examples.adhoc.hostautoconf.Host;
+//import inet.examples.adhoc.hostautoconf.Host;
 import inet.world.radio.ChannelControl;
-import ned.DatarateChannel;
+//import ned.DatarateChannel;
 
 //
 // Declaration of simple module type Air (interface)
@@ -60,12 +60,12 @@ network GSMSIM
         int number_bts = default(1);
         double xwidth = default(10000);
         double ydepth = default(10000);
-    types:
-        channel Abis extends DatarateChannel
-        {
-            delay = 10ms;
-            datarate = 5Mbps;
-        }
+//    types:
+//        channel Abis extends DatarateChannel
+//        {
+//            delay = 10ms;
+//            datarate = 5Mbps;
+//        }
     submodules:
 //        air: Air {
 //            parameters:
@@ -94,8 +94,6 @@ network GSMSIM
                 //yc = input(0,"Y position"); // start y position [m]	
                 //vx = input(5,"Velocity X"); // velocity x [m/s]
                 //vy = input(5,"Velocity Y"); // velocity y [m/s]
-                ms_logic.xc = default(0); // start x position [m]
-                ms_logic.yc = default(0); // start y position [m]	
                 ms_logic.vx = default(5); // velocity x [m/s]
                 ms_logic.vy = default(5); // velocity y [m/s]
                 ms_logic.numbts = number_bts;

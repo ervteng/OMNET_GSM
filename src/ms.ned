@@ -21,10 +21,6 @@ import inet.mobility.models.LinearMobility;
 simple MS 
 {
     parameters: 
-        double xc; // X coordinate
-        double yc; // Y coordinate
-       	double vx; // velocity X vector
-        double vy; // velocity Y vector
       	int numbts; // how many bts
      	double timeout @unit(s) = default(1s); // how long do you wait before timeout 
     gates: 

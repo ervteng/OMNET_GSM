@@ -17,22 +17,38 @@
 #define __GSM_SIM_GSMMac_H_
 
 #include <omnetpp.h>
-
+#include "INETDefs.h"
+#include "RadioState.h"
+#include "WirelessMacBase.h"
 /**
  * TODO - Generated class
  */
-class GSMMac : public cSimpleModule
+class INET_API GSMMac : public WirelessMacBase, public cListener
 {
   protected:
-    virtual void initialize();
-    virtual void handleMessage(cMessage *msg);
-    virtual void handleUpperMsg(cMessage*);
-    virtual void handleRadioMsg(cMessage*);
+    // MacBase functions
+    virtual void flushQueue();
+    virtual void clearQueue();
+    virtual InterfaceEntry *createInterfaceEntry();
+
+    virtual void handleSelfMsg(cMessage *msg);
+    virtual void handleUpperMsg(cPacket *msg);
+    virtual void handleCommand(cMessage *msg);
+    virtual void handleLowerMsg(cPacket *msg);
+    cModule *radioModule;
+    RadioState::State radioState;
+    virtual void receiveSignal(cComponent *src, simsignal_t id, long x);
+    static simsignal_t radioStateSignal;
   private:
-    int upperLayerIn;
-    int upperLayerOut;
-    int fromRadio;
-    int toRadio;
+    simtime_t lastTransmitTime;
+
+  public:
+      GSMMac();
+      virtual ~GSMMac();
+
+    protected:
+      virtual int numInitStages() const { return 2; }
+      virtual void initialize(int stage);
 };
 
 #endif

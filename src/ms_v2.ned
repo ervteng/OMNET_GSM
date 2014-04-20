@@ -60,8 +60,8 @@ module MS_v2
         }
 
     connections:
-        radio.upperLayerIn <-- mac.toRadio;
-        radio.upperLayerOut --> mac.fromRadio;
+        radio.upperLayerIn <-- mac.lowerLayerOut;
+        radio.upperLayerOut --> mac.lowerLayerIn;
         mac.upperLayerOut --> ms_logic.from_air;
         mac.upperLayerIn <-- ms_logic.to_air;
         radioIn --> { @display("m=s"); } --> radio.radioIn;

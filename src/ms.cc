@@ -6,6 +6,7 @@
 #include "gsmsim.h"
 #include "ms.h"
 #include "GSMRadio.h"
+#include "Radio80211aControlInfo_m.h"
 
 Define_Module(MS);
 
@@ -218,7 +219,7 @@ void MS::processMsgMoveCar(cMessage *msg)
 void MS::processMsgBtsData(cMessage *msg)
 {
     ev << "==> MS[" << own_addr << "] got BTS_DATA\n";
-    double rssi = getRssiFromRadio();
+    double rssi = getRSSIFromPacket(msg);
     EV << "==> MS[" << own_addr << "] RCV Rssi=" << rssi << endl;
     if (rssi > min)                        // More then the best
     {
@@ -324,13 +325,22 @@ void MS::processMsgHandoverMs(cMessage *msg)
     }
 }
 
-double MS::getRssiFromRadio()
+double MS::getRSSIFromPacket(cMessage *msg)
 {
-    GSMRadio* myRadio =  (GSMRadio*) this->getParentModule()->getSubmodule("radio");
-//    GSMRadio* myRadio2 = dynamic_cast<GSMRadio *>(myRadio);
-    double rssi = 0;
-    rssi = myRadio->getRSSI();
-    return rssi;
+    Radio80211aControlInfo *cinfo = dynamic_cast<Radio80211aControlInfo*>(msg->getControlInfo());
+    double recPower  = 0;
+    if(cinfo){
+        recPower = cinfo->getRecPow();
+    }
+
+    if (recPower > -110)                    // if it sees the ms
+    {
+         //return ((dblRadius - dblDistance) * dblWatt / dblRadius);
+        return recPower;
+    }
+    else {
+        return -1;
+    }
 }
 
 //void MS::handleMessage(cMessage *msg)

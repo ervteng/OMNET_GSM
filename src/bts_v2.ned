@@ -53,7 +53,7 @@ module BTS_v2
         }
         mobility: StationaryMobility {
             parameters:
-                @display("p=110,38,0");
+                @display("p=110,38");
                 //                initialX = 0m;  // Default position
                 //                initialY = 0m;
                 initialZ = 0m;
@@ -68,8 +68,8 @@ module BTS_v2
         }
 
     connections :
-        radio.upperLayerIn <-- mac.toRadio;
-        radio.upperLayerOut --> mac.fromRadio;
+        radio.upperLayerIn <-- mac.lowerLayerOut;
+        radio.upperLayerOut --> mac.lowerLayerIn;
         mac.upperLayerOut --> bts_logic.from_air;
         mac.upperLayerIn <-- bts_logic.to_air;
         radioIn --> { @display("m=s"); } --> radio.radioIn;

@@ -15,45 +15,141 @@
 
 #include "GSMMac.h"
 
+#include "GSMRadio.h"
+#include "IdealWirelessFrame_m.h"
+#include "Ieee802Ctrl_m.h"
+#include "IInterfaceTable.h"
+#include "InterfaceTableAccess.h"
+#include "IPassiveQueue.h"
+#include "opp_utils.h"
+
 Define_Module(GSMMac);
 
-void GSMMac::initialize()
+// Register radio State Signal
+simsignal_t GSMMac::radioStateSignal = registerSignal("radioState");
+
+
+
+
+GSMMac::GSMMac()
 {
-    upperLayerIn = findGate("upperLayerIn");
-    upperLayerOut = findGate("upperLayerOut");
-    fromRadio = findGate("fromRadio");
-    toRadio = findGate("toRadio");
+    //queueModule = NULL;
+    radioModule = NULL;
+}
+
+GSMMac::~GSMMac()
+{
+}
+
+void GSMMac::clearQueue()
+{
+}
+
+void GSMMac::flushQueue()
+{
+}
+
+InterfaceEntry *GSMMac::createInterfaceEntry()
+{
+    InterfaceEntry *e = new InterfaceEntry(this);
+    return e;
+}
+
+void GSMMac::initialize(int stage)
+
+{
+    WirelessMacBase::initialize(stage);
+    if(stage == 0)
+    {
+        //upperLayerIn = findGate("upperLayerIn");
+        //upperLayerOut = findGate("upperLayerOut");
+        //fromRadio = findGate("fromRadio");
+        //toRadio = findGate("toRadio");
+        radioModule = gate("lowerLayerOut")->getPathEndGate()->getOwnerModule();
+        GSMRadio *irm = check_and_cast<GSMRadio *>(radioModule);
+
+        EV << "Subscribing Listener\n";
+        irm->subscribe(radioStateSignal, this);
+
+        // Allow for transmits at time 0
+        lastTransmitTime = simTime() - 0.000001;
+    }
 }
 
 
-void GSMMac::handleMessage(cMessage *msg)
+// Set radio State when state is updated by Radio module
+void GSMMac::receiveSignal(cComponent *src, simsignal_t id, long x)
 {
-      if (msg->getArrivalGateId() == upperLayerIn)
-      {
-          EV << "Sending Message to Radio\n";
-          handleUpperMsg(msg);
-      }
-      else if (msg->getArrivalGateId() == fromRadio)
-      {
-          EV << "Sending Message to Logic\n";
-          handleRadioMsg(msg);
-      }
-      else if (msg->isSelfMessage())
-      {
+    if (id == radioStateSignal && src == radioModule)
+    {
+        radioState = (RadioState::State)x;
+    }
+}
 
-      }
+
+//void GSMMac::handleMessage(cMessage *msg)
+//{
+//      if (msg->getArrivalGateId() == upperLayerIn)
+//      {
+//          EV << "Sending Message to Radio\n";
+//          handleUpperMsg(msg);
+//      }
+//      else if (msg->getArrivalGateId() == fromRadio)
+//      {
+//          EV << "Sending Message to Logic\n";
+//          handleRadioMsg(msg);
+//      }
+//      else if (msg->isSelfMessage())
+//      {
+//
+//      }
+//
+//}
+
+//Only send when not transmitting
+void GSMMac::handleUpperMsg(cPacket *msg)
+{
+        //outStandingRequests--;
+        if (radioState == RadioState::TRANSMIT)
+        {
+            // Logic error: we do not request packet from the external queue when radio is transmitting
+            //error("Received msg for transmission but transmitter is busy");
+        }
+        else if (radioState == RadioState::SLEEP)
+        {
+            EV << "Dropped upper layer message " << msg << " because radio is SLEEPing.\n";
+        }
+        else
+        {
+            // We are idle, so we can start transmitting right away.
+            EV << "Received " << msg << " for transmission\n";
+            cPacket *data = dynamic_cast<cPacket*>(msg);
+
+            //Collision Protection
+            if(lastTransmitTime < simTime()){
+                sendDown(data);
+                lastTransmitTime = simTime();
+            }
+            else {
+                EV << "The last transmission was at the same time, it's collision.\n";
+            }
+
+        }
+
 
 }
 
-void GSMMac::handleUpperMsg(cMessage *msg)
+void GSMMac::handleSelfMsg(cMessage *msg)
 {
-    cPacket *data = dynamic_cast<cPacket*>(msg);
-    data->setByteLength(48);
-    send(data,"toRadio");
-    //msg = NULL;
+    //error("Unexpected self-message");
 }
 
-void GSMMac::handleRadioMsg(cMessage *msg)
+void GSMMac::handleLowerMsg(cPacket *msg)
 {
-    send(msg,"upperLayerOut");
+    sendUp(msg);
+}
+
+void GSMMac::handleCommand(cMessage *msg)
+{
+    error("Unexpected command received from higher layer");
 }

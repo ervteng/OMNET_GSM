@@ -39,7 +39,7 @@ void BTS::destroy() {
         delete iPhoneState;            // Release dynamic buffer
 }
 
-double BTS::calculateWatt(cMessage *msg) {
+double BTS::getRSSIFromPacket(cMessage *msg) {
 
     Radio80211aControlInfo *cinfo = dynamic_cast<Radio80211aControlInfo*>(msg->getControlInfo());
     double recPower  = 0;
@@ -57,19 +57,6 @@ double BTS::calculateWatt(cMessage *msg) {
     }
 }
 
-double BTS::calculateWatt(double dblMSXc, double dblMSYc) {
-    double dblDistance;
-
-    dblDistance = sqrt(
-            (dblXc - dblMSXc) * (dblXc - dblMSXc)
-                    + (dblYc - dblMSYc) * (dblYc - dblMSYc));
-    if (dblDistance < dblRadius)                    // if it sees the ms
-            {
-        return ((dblRadius - dblDistance) * dblWatt / dblRadius);
-    } else {
-        return -1;
-    }
-}
 
 void BTS::handleMessage(cMessage *msg)
 {
@@ -125,13 +112,11 @@ void BTS::processMsgCheckBtsFromMs(cMessage *msg)
     EV << "==> [BTS] RCV: CHECK_BTS from MS\n";
     int iClientAddr = msg->par("src");
     int iDest = msg->par("dest");
-    double dblMSXc = msg->par("xc");
-    double dblMSYc = msg->par("yc");
     msg->setName("BTS_DATA");
     msg->setKind(BTS_DATA);
     msg->par("dest") = iClientAddr;
     msg->par("src") = iDest;
-    double dblPower = calculateWatt(msg);
+    double dblPower = getRSSIFromPacket(msg);
     EV << "==> [BTS] RSSI=" << dblPower << endl;
     if ((dblPower != -1) && (iConnections < iSlots)) // if it sees the ms and has free slot
     {
@@ -190,7 +175,7 @@ void BTS::processMsgForceCheckMsFromBsc(cMessage *msg)
     {
         int iMS = msg->par("ms");
         int iDest = msg->par("dest");
-        cMessage *check_ms = new cMessage("CHECK_MS", CHECK_MS);
+        cPacket *check_ms = new cPacket("CHECK_MS", CHECK_MS);
         check_ms->addPar(*new cMsgPar("dest")) = iMS;
         check_ms->addPar(*new cMsgPar("src")) = iDest;
         ev << "Sending CHECK_MS to client " << iMS << '\n';
@@ -205,13 +190,13 @@ void BTS::processMsgDataFromMs(cMessage *msg)
     msg->setKind(BTS_DATA);
     msg->par("dest") = iClientAddr;
     msg->par("src") = iDest;
-    double dblPower = calculateWatt(msg);
+    double dblPower = getRSSIFromPacket(msg);
     if ((dblPower != -1) && (iConnections < iSlots)) // if it sees the ms and has free slot
             {
-        cMessage *handover_data = new cMessage("HANDOVER_DATA", HANDOVER_DATA);
+        cPacket *handover_data = new cPacket("HANDOVER_DATA", HANDOVER_DATA);
         handover_data->addPar(*new cMsgPar("ms") = iClientAddr);
         handover_data->addPar(*new cMsgPar("src") = iDest);
-//        handover_data->addPar(*new cMsgPar("watt") = dblPower);
+        handover_data->addPar(*new cMsgPar("watt") = dblPower);
         ev << "==> [BTS] Sending HANDOVER_DATA with watt " << dblPower
            << " to BSC\n";
         send(handover_data, "to_bsc");
@@ -222,7 +207,7 @@ void BTS::processMsgCheckLineFromMs(cMessage *msg)
 {
     int iClientAddr = msg->par("src");
     int iDest = msg->par("dest");
-    double dblPower = calculateWatt(msg);
+    double dblPower = getRSSIFromPacket(msg);
     EV << "==> [BTS] RCV RSSI=" << dblPower << endl;
 
 //    EV << " Watt:" << dblPower << " Watt limit "
@@ -233,7 +218,7 @@ void BTS::processMsgCheckLineFromMs(cMessage *msg)
         cMessage *handover_chk = new cMessage("HANDOVER_CHK", HANDOVER_CHK);
         handover_chk->addPar(*new cMsgPar("ms") = iClientAddr);
         handover_chk->addPar(*new cMsgPar("src") = iDest);
-//        handover_chk->addPar(*new cMsgPar("watt") = dblPower);
+        handover_chk->addPar(*new cMsgPar("watt") = dblPower);
         EV << "==> [BTS] Sending HANDOVER_CHK to BSC\n";
         send(handover_chk, "to_bsc");
     }

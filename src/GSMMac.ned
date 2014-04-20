@@ -21,8 +21,8 @@ package gsm_sim;
 simple GSMMac
 {
     gates:
-        input fromRadio;
-        output toRadio;
+        input lowerLayerIn;
+        output lowerLayerOut;
         input upperLayerIn;
         output upperLayerOut;
         //from_air --> ms_logic.from_air;
