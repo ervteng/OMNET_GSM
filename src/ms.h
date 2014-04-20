@@ -30,6 +30,7 @@ class MS : public cSimpleModule, public INotifiable
         virtual void processMsgForceDisc(cMessage *msg); // Disconnect from BTS
         virtual void processMsgCheckMs(cMessage *msg); // Check MS for handover
         virtual void processMsgHandoverMs(cMessage *msg); // Handover request from BTS
+        virtual double getRssiFromRadio();
 
     private:
         int iMissedCalls;               // number of missed calls
@@ -43,11 +44,11 @@ class MS : public cSimpleModule, public INotifiable
         int type;                       // message type                          // program state                          // number of handovers
         double delay;
         double dblTemp;
-        // Query module parameters
-        double xc;
-        double yc;
-        int vx;
-        int vy;
+//        // Query module parameters
+//        double xc;
+//        double yc;
+//        int vx;
+//        int vy;
         double callinterval;
         double calllength;
         double timeout;

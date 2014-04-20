@@ -237,18 +237,33 @@ $O/bts.o: bts.cc \
 	$(INET_PROJ)/src/world/radio/ChannelAccess.h \
 	$(INET_PROJ)/src/world/radio/IChannelControl.h
 $O/ms.o: ms.cc \
+	GSMRadio.h \
 	gsmsim.h \
 	ms.h \
 	$(INET_PROJ)/src/base/BasicModule.h \
 	$(INET_PROJ)/src/base/Coord.h \
+	$(INET_PROJ)/src/base/ILifecycle.h \
 	$(INET_PROJ)/src/base/INETDefs.h \
 	$(INET_PROJ)/src/base/INotifiable.h \
 	$(INET_PROJ)/src/base/ModuleAccess.h \
 	$(INET_PROJ)/src/base/NotificationBoard.h \
 	$(INET_PROJ)/src/base/NotifierConsts.h \
+	$(INET_PROJ)/src/linklayer/contract/RadioState.h \
+	$(INET_PROJ)/src/linklayer/radio/AirFrame_m.h \
+	$(INET_PROJ)/src/linklayer/radio/INoiseGenerator.h \
+	$(INET_PROJ)/src/linklayer/radio/IRadioModel.h \
+	$(INET_PROJ)/src/linklayer/radio/ModulationType.h \
+	$(INET_PROJ)/src/linklayer/radio/Radio.h \
+	$(INET_PROJ)/src/linklayer/radio/SnrList.h \
+	$(INET_PROJ)/src/linklayer/radio/propagation/IReceptionModel.h \
 	$(INET_PROJ)/src/mobility/IMobility.h \
 	$(INET_PROJ)/src/mobility/models/LinearMobility.h \
 	$(INET_PROJ)/src/mobility/models/MobilityBase.h \
 	$(INET_PROJ)/src/mobility/models/MovingMobilityBase.h \
-	$(INET_PROJ)/src/util/FWMath.h
+	$(INET_PROJ)/src/util/FWMath.h \
+	$(INET_PROJ)/src/world/annotations/AnnotationManager.h \
+	$(INET_PROJ)/src/world/obstacles/Obstacle.h \
+	$(INET_PROJ)/src/world/obstacles/ObstacleControl.h \
+	$(INET_PROJ)/src/world/radio/ChannelAccess.h \
+	$(INET_PROJ)/src/world/radio/IChannelControl.h
 

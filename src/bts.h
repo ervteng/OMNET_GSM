@@ -27,6 +27,7 @@ class BTS: public cSimpleModule {
         virtual void processMsgForceCheckMsFromBsc(cMessage *msg);
         virtual void processMsgDataFromMs(cMessage *msg);
         virtual void processMsgCheckLineFromMs(cMessage *msg);
+        virtual double getRssiFromRadio();
 //        virtual void activity();
         virtual void destroy();
 
