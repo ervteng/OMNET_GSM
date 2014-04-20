@@ -73,8 +73,16 @@ double BTS::calculateWatt(double dblMSXc, double dblMSYc) {
 
 void BTS::handleMessage(cMessage *msg)
 {
-    if(msg->isSelfMessage()){
+//    int n = getNumParams();
+//    for (int i=0; i<n; i++) {
+//           cPar& p = par(i);
+//           ev << "parameter: " << p.getName() << "\n";
+//           ev << "  type:" << cPar::getTypeName(p.getType()) << "\n";
+//           ev << "  contains:" << p.str() << "\n";
+//    }
 
+    if(msg->isSelfMessage()){
+        EV << "0000000000000000000000000000\n";
     }else if (msg->getKind() == CONN_REQ){ // Connection request from MS
         processMsgConnReqFromMs(msg);
     }else if (msg->getKind() == CHECK_BTS){  // Check request from the MS
@@ -90,16 +98,17 @@ void BTS::handleMessage(cMessage *msg)
     }else if (msg->getKind() == CHECK_LINE){ // Request from MS to check handover
         processMsgCheckLineFromMs(msg);
     }else {
-        ev << "Message Error: Cannot handle message\n";
+        ev << "==> [BTS] Message Error: Cannot handle message\n";
     }
 }
 
 void BTS::processMsgConnReqFromMs(cMessage *msg)
 {
+    EV << "==> [BTS] RCV: CONN_REQ from MS\n";
     int iClientAddr = msg->par("src");
     if (iConnections < iSlots)                // If there is a free slot
     {
-        ev << "client is addr=" << iClientAddr
+        EV << "==> [BTS] client is addr=" << iClientAddr
            << ", sending CONN_ACK free slots left:"
            << iSlots - iConnections - 1 << '\n';
         msg->setName("CONN_ACK");
@@ -113,29 +122,28 @@ void BTS::processMsgConnReqFromMs(cMessage *msg)
 
 void BTS::processMsgCheckBtsFromMs(cMessage *msg)
 {
+    EV << "==> [BTS] RCV: CHECK_BTS from MS\n";
     int iClientAddr = msg->par("src");
     int iDest = msg->par("dest");
     double dblMSXc = msg->par("xc");
     double dblMSYc = msg->par("yc");
-
-    // Get the received Power
-
     msg->setName("BTS_DATA");
     msg->setKind(BTS_DATA);
     msg->par("dest") = iClientAddr;
     msg->par("src") = iDest;
     double dblPower = calculateWatt(msg);
+    EV << "==> [BTS] RSSI=" << dblPower << endl;
     if ((dblPower != -1) && (iConnections < iSlots)) // if it sees the ms and has free slot
-            {
+    {
         msg->addPar(*new cMsgPar("data") = dblPower);
-        ev << "Sending data to " << iDest;
+        EV << "==> [BTS] Sending data to " << iDest << endl;
         send(msg, "to_air");
     }
 }
 
 void BTS::processMsgDiscReqFromMs(cMessage *msg)
 {
-    ev << "got DISC_REQ, sending DISC_ACK\n";
+    ev << "==> [BTS] got DISC_REQ, sending DISC_ACK\n";
     int iClientAddr = msg->par("src");
     msg->setName("DISC_ACK");
     msg->setKind(DISC_ACK);
@@ -159,7 +167,7 @@ void BTS::processMsgHandoverFromBsc(cMessage *msg)
             handover_ms->addPar(*new cMsgPar("dest")) = iMS;
             handover_ms->addPar(*new cMsgPar("src")) = iDest;  //send to ms
             iConnections--;
-            ev << "Sending HANDOVER_MS to client " << iClientAddr
+            ev << "==> [BTS] Sending HANDOVER_MS to client " << iClientAddr
                     << ", free slots left:" << iSlots - iConnections
                     << '\n';
             send(handover_ms, "to_air");
@@ -168,7 +176,7 @@ void BTS::processMsgHandoverFromBsc(cMessage *msg)
             force_disc->addPar(new cMsgPar("dest")) = iMS;
             force_disc->addPar(new cMsgPar("src")) = iDest;   //send to ms
             iConnections--;
-            ev << "Sending FORCE_DISC to client " << iClientAddr
+            ev << "==> [BTS] Sending FORCE_DISC to client " << iClientAddr
                << ", free slots left:" << iSlots - iConnections
                << '\n';
             send(force_disc, "to_air");
@@ -193,8 +201,6 @@ void BTS::processMsgDataFromMs(cMessage *msg)
 {
     int iClientAddr = msg->par("src");
     int iDest = msg->par("dest");
-    double dblMSXc = msg->par("xc");
-    double dblMSYc = msg->par("yc");
     msg->setName("BTS_DATA");
     msg->setKind(BTS_DATA);
     msg->par("dest") = iClientAddr;
@@ -205,8 +211,8 @@ void BTS::processMsgDataFromMs(cMessage *msg)
         cMessage *handover_data = new cMessage("HANDOVER_DATA", HANDOVER_DATA);
         handover_data->addPar(*new cMsgPar("ms") = iClientAddr);
         handover_data->addPar(*new cMsgPar("src") = iDest);
-        handover_data->addPar(*new cMsgPar("watt") = dblPower);
-        ev << "Sending HANDOVER_DATA with watt " << dblPower
+//        handover_data->addPar(*new cMsgPar("watt") = dblPower);
+        ev << "==> [BTS] Sending HANDOVER_DATA with watt " << dblPower
            << " to BSC\n";
         send(handover_data, "to_bsc");
     }
@@ -216,20 +222,19 @@ void BTS::processMsgCheckLineFromMs(cMessage *msg)
 {
     int iClientAddr = msg->par("src");
     int iDest = msg->par("dest");
-    double dblMSXc = msg->par("xc");
-    double dblMSYc = msg->par("yc");
     double dblPower = calculateWatt(msg);
+    EV << "==> [BTS] RCV RSSI=" << dblPower << endl;
 
-    ev << " Watt:" << dblPower << " Watt limit "
-       << dblWatt * HANDOVER_LIMIT << "\n";
+//    EV << " Watt:" << dblPower << " Watt limit "
+//       << dblWatt * HANDOVER_LIMIT << "\n";
 
     if ((dblPower < 0) || (dblPower < dblWatt * HANDOVER_LIMIT)) {
         // Check for handover
         cMessage *handover_chk = new cMessage("HANDOVER_CHK", HANDOVER_CHK);
         handover_chk->addPar(*new cMsgPar("ms") = iClientAddr);
         handover_chk->addPar(*new cMsgPar("src") = iDest);
-        handover_chk->addPar(*new cMsgPar("watt") = dblPower);
-        ev << "Sending HANDOVER_CHK to BSC\n";
+//        handover_chk->addPar(*new cMsgPar("watt") = dblPower);
+        EV << "==> [BTS] Sending HANDOVER_CHK to BSC\n";
         send(handover_chk, "to_bsc");
     }
 }
