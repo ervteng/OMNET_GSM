@@ -147,7 +147,7 @@ void BTS::processMsgHandoverFromBsc(cMessage *msg)
     if (iPhoneState[iMS] == PHONE_STATE_CONNECTED) {
         if (iNewBTS > -1)   // Disconnect MS and send the new bts number
                 {
-            cMessage *handover_ms = new cMessage("HANDOVER_MS", HANDOVER_MS);
+            cMessage *handover_ms = new cPacket("HANDOVER_MS", HANDOVER_MS);
             handover_ms->addPar(*new cMsgPar("newbts") = iNewBTS);
             handover_ms->addPar(*new cMsgPar("dest")) = iMS;
             handover_ms->addPar(*new cMsgPar("src")) = iDest;  //send to ms
@@ -157,7 +157,7 @@ void BTS::processMsgHandoverFromBsc(cMessage *msg)
                     << '\n';
             send(handover_ms, "to_air");
         } else {                            // Disconnect MS immediately
-            cMessage *force_disc = new cMessage("FORCE_DISC", FORCE_DISC);
+            cMessage *force_disc = new cPacket("FORCE_DISC", FORCE_DISC);
             force_disc->addPar(new cMsgPar("dest")) = iMS;
             force_disc->addPar(new cMsgPar("src")) = iDest;   //send to ms
             iConnections--;
@@ -215,7 +215,7 @@ void BTS::processMsgCheckLineFromMs(cMessage *msg)
 
     if ((dblPower < 0) || (dblPower < dblWatt * HANDOVER_LIMIT)) {
         // Check for handover
-        cMessage *handover_chk = new cMessage("HANDOVER_CHK", HANDOVER_CHK);
+        cMessage *handover_chk = new cPacket("HANDOVER_CHK", HANDOVER_CHK);
         handover_chk->addPar(*new cMsgPar("ms") = iClientAddr);
         handover_chk->addPar(*new cMsgPar("src") = iDest);
         handover_chk->addPar(*new cMsgPar("watt") = dblPower);
