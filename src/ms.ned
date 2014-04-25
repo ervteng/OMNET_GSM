@@ -23,6 +23,7 @@ simple MS
     parameters: 
       	int numbts; // how many bts
      	double timeout @unit(s) = default(1s); // how long do you wait before timeout 
+     	int imsi;
     gates: 
         input from_air; // gate for connecting to BTS
         output to_air; // gate for connecting to BTS 	

@@ -32,7 +32,7 @@ enum {
     CHECK_MS,            // check MS                          [BTS->MS]
     FORCE_CHECK_MS,      // check MS                          [BSC->BTS]
     FORCE_DISC,          // force disconnect                  [BTS->MS]
-    MOVE_CAR,            // move the car                      [MS->MS]
+    TRIGGER,             // Trigger in MS                     [MS->MS]
     BTS_DATA,            // data from the BTS                 [BTS->MS]
     MS_DATA,             // data from the MS                  [MS->BTS]
     HANDOVER_CHK,        // check for handover                [BTS->BSC]

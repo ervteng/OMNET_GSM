@@ -27,7 +27,7 @@ module MS_v2
         @node();
         @labels(node);
         @display("i=device/cellphone");
-        string imsi = default("00101");
+        int imsi = default(0);
         double initialX = default(0);
         double initialY = default(0);
     gates:
@@ -35,6 +35,7 @@ module MS_v2
     submodules:
         ms_logic: MS {
             parameters:
+                imsi = imsi;
                 @display("p=71,110");
         }
         mac: GSMMac {

@@ -37,7 +37,6 @@ class MS : public cSimpleModule, public INotifiable
         int iCalls;                     // number of calls
         int iBroken;                    // number of broken calls
         int iHandover;               // number of handovers
-        int own_addr;                   // index of gate to which we are connected
         int connected;                  // BTS number if connected
         int status;                     // Finite state machine
         int i;                        // the number of bts
@@ -58,6 +57,7 @@ class MS : public cSimpleModule, public INotifiable
         cMessage *check_bts,*check_ms,*check_line;
         int selected;
         int num_bts;
+        int imsi;
         SimTime lastmsg;
         double min;
         SimTime counter;
