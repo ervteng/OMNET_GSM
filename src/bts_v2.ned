@@ -32,6 +32,7 @@ module BTS_v2
         double initialX = default(0);
         double initialY = default(0);
         double initialZ = default(0);
+        string BCC = default("000");
     gates:
         input from_bsc;
         output to_bsc;
@@ -41,6 +42,7 @@ module BTS_v2
     submodules:
         bts_logic: BTS {
             parameters:
+                BCC = BCC;
                 @display("p=71,110");
         }
         mac: GSMMac {

@@ -27,7 +27,7 @@ module MS_v2
         @node();
         @labels(node);
         @display("i=device/cellphone");
-        int imsi = default(0);
+        string imsi = default("00101");
         double initialX = default(0);
         double initialY = default(0);
     gates:

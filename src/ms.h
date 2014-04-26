@@ -12,6 +12,7 @@
 #include "simtime.h"
 #include "LinearMobility.h"
 #include "Coord.h"
+#include "string.h"
 
 class MS : public cSimpleModule, public INotifiable
 {
@@ -23,7 +24,7 @@ class MS : public cSimpleModule, public INotifiable
         virtual void handleMessage(cMessage *msg);
         virtual void finish();
         virtual void receiveChangeNotification(int category, const cObject *details);
-        virtual void processMsgMoveCar(cMessage *msg); // self message
+        virtual void processMsgTrigger(cMessage *msg); // self message
         virtual void processMsgBtsData(cMessage *msg); // Information from a BTS
         virtual void processMsgConnAck(cMessage *msg); // Connection acknowledgement from BTS
         virtual void processMsgDiscAck(cMessage *msg); // Disconnect acknowledgement from BTS
@@ -57,7 +58,7 @@ class MS : public cSimpleModule, public INotifiable
         cMessage *check_bts,*check_ms,*check_line;
         int selected;
         int num_bts;
-        int imsi;
+        const char* imsi;
         SimTime lastmsg;
         double min;
         SimTime counter;

@@ -20,9 +20,7 @@ void MS::initialize(){
     callinterval = CALL_INTERVAL_MIN + exponential(CALL_INTERVAL);
     calllength = CALL_LENGTH_MIN + exponential(CALL_LENGTH);
     timeout = par ( "timeout" );
-
-    // assign address: index of gate to which we are connected
-    imsi = gate( "to_air" )->getNextGate()->getIndex();
+    imsi = par("imsi");
     selected=0;
     num_bts = 0;
 
@@ -83,25 +81,35 @@ void MS::handleMessage(cMessage *msg)
 //           ev << "  contains:" << p.str() << "\n";
 //    }
 //    EV << "==> DEBUG: End params\n";
-    if(msg->isSelfMessage())
-    type = msg->getKind();
 
-    if (type == TRIGGER){ // TODO Replace with selfmessage logic
-        processMsgMoveCar(msg);
-    }else if (type == BTS_DATA){
-        processMsgBtsData(msg);
-    }else if (type == CONN_ACK){
-        processMsgConnAck(msg);
-    }else if (type == DISC_ACK){
-        processMsgDiscAck(msg);
-    }else if (type == FORCE_DISC){
-        processMsgForceDisc(msg);
-    }else if (type == CHECK_MS){
-        processMsgCheckMs(msg);
-    }else if (type == HANDOVER_MS){
-        processMsgHandoverMs(msg);
-    }else {
-        EV <<  "==> MS[" << imsi << "] ERROR: no matched message type=" << type;
+    type = msg->getKind();
+    if(msg->isSelfMessage()){
+        if (type == TRIGGER){ // TODO Replace with selfmessage logic
+            processMsgTrigger(msg);
+        }
+    }
+    else {
+        const char* intendedDest = msg->par("dest");
+        if(intendedDest != imsi){
+            EV << "This message isn't for me! Dropping";
+            delete msg;  // keeps OMNeT++ happy
+            return;
+        }
+        if (type == BTS_DATA){
+            processMsgBtsData(msg);
+        }else if (type == CONN_ACK){
+            processMsgConnAck(msg);
+        }else if (type == DISC_ACK){
+            processMsgDiscAck(msg);
+        }else if (type == FORCE_DISC){
+            processMsgForceDisc(msg);
+        }else if (type == CHECK_MS){
+            processMsgCheckMs(msg);
+        }else if (type == HANDOVER_MS){
+            processMsgHandoverMs(msg);
+        }else {
+            EV <<  "==> MS[" << imsi << "] ERROR: no matched message type=" << type;
+        }
     }
 
 
@@ -112,8 +120,8 @@ void MS::handleMessage(cMessage *msg)
         i=0;
         check_bts = new cPacket( "CHECK_BTS", CHECK_BTS );
         check_bts->addPar( *new cMsgPar("src")  = imsi );
-        check_bts->addPar( *new cMsgPar("dest") = i );
-        ev << "Sending CHECK_BTS to #" << i << '\n';
+        check_bts->addPar( *new cMsgPar("dest") = "bcast" );
+        ev << "Sending CHECK_BTS to all BTS" << '\n';
         send( check_bts, "to_air" );            // Send the first BTS check message
         status=CHECK_BTS;                        // New state
         lastmsg=simTime();
@@ -132,7 +140,7 @@ void MS::handleMessage(cMessage *msg)
 }
 
 
-void MS::processMsgMoveCar(cMessage *msg)
+void MS::processMsgTrigger(cMessage *msg)
 {
 
     alltime+=delay;

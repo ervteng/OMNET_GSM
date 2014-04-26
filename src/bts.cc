@@ -26,6 +26,7 @@ void BTS::initialize()
     iPhones = par("phones");                // Number of phones
     iPhoneState = new int[iPhones];             // Allocate buffer
     iConnections = 0;                           // Number of connections
+    bcc = par("BCC");
 }
 
 // Get called to record statistics
@@ -37,6 +38,8 @@ void BTS::finish()
 void BTS::destroy() {
     if (iPhoneState)
         delete iPhoneState;            // Release dynamic buffer
+    //if(connectedPhones)
+    //delete connectedPhones;
 }
 
 double BTS::getRSSIFromPacket(cMessage *msg) {
@@ -70,29 +73,38 @@ void BTS::handleMessage(cMessage *msg)
 
     if(msg->isSelfMessage()){
         EV << "0000000000000000000000000000\n";
-    }else if (msg->getKind() == CONN_REQ){ // Connection request from MS
-        processMsgConnReqFromMs(msg);
-    }else if (msg->getKind() == CHECK_BTS){  // Check request from the MS
-        processMsgCheckBtsFromMs(msg);
-    }else if (msg->getKind() == DISC_REQ){ // Disconnect request from MS
-        processMsgDiscReqFromMs(msg);
-    }else if (msg->getKind() == HANDOVER_BTS_DISC){ // Handover request from BSC
-        processMsgHandoverFromBsc(msg);
-    }else if (msg->getKind() == FORCE_CHECK_MS){ // Check MS for handover
-        processMsgForceCheckMsFromBsc(msg);
-    }else if (msg->getKind() == MS_DATA){ // Requested data from MS for handover
-        processMsgDataFromMs(msg);
-    }else if (msg->getKind() == CHECK_LINE){ // Request from MS to check handover
-        processMsgCheckLineFromMs(msg);
-    }else {
-        ev << "==> [BTS] Message Error: Cannot handle message\n";
+    }
+    else{
+        const char* intendedDest = msg->par("dest");
+        if(intendedDest != bcc && intendedDest != "bcast"){
+            EV << "This message isn't for me! Dropping";
+            delete msg;  // keeps OMNeT++ happy
+            return;
+        }
+        if (msg->getKind() == CONN_REQ){ // Connection request from MS
+            processMsgConnReqFromMs(msg);
+        }else if (msg->getKind() == CHECK_BTS){  // Check request from the MS
+            processMsgCheckBtsFromMs(msg);
+        }else if (msg->getKind() == DISC_REQ){ // Disconnect request from MS
+            processMsgDiscReqFromMs(msg);
+        }else if (msg->getKind() == HANDOVER_BTS_DISC){ // Handover request from BSC
+            processMsgHandoverFromBsc(msg);
+        }else if (msg->getKind() == FORCE_CHECK_MS){ // Check MS for handover
+            processMsgForceCheckMsFromBsc(msg);
+        }else if (msg->getKind() == MS_DATA){ // Requested data from MS for handover
+            processMsgDataFromMs(msg);
+        }else if (msg->getKind() == CHECK_LINE){ // Request from MS to check handover
+            processMsgCheckLineFromMs(msg);
+        }else {
+            ev << "==> [BTS] Message Error: Cannot handle message\n";
+        }
     }
 }
 
 void BTS::processMsgConnReqFromMs(cMessage *msg)
 {
     EV << "==> [BTS] RCV: CONN_REQ from MS\n";
-    int iClientAddr = msg->par("src");
+    const char* iClientAddr = msg->par("src");
     if (iConnections < iSlots)                // If there is a free slot
     {
         EV << "==> [BTS] client is addr=" << iClientAddr
@@ -102,7 +114,8 @@ void BTS::processMsgConnReqFromMs(cMessage *msg)
         msg->setKind(CONN_ACK);
         msg->par("dest") = iClientAddr;
         send(msg, "to_air");
-        iPhoneState[iClientAddr] = PHONE_STATE_CONNECTED; // Set the phone state to connected
+        //iPhoneState[iClientAddr] = PHONE_STATE_CONNECTED; // Set the phone state to connected
+        connectedPhones.insert(iClientAddr);
         iConnections++;    // Increase the number of current connections
     }
 }
@@ -110,7 +123,7 @@ void BTS::processMsgConnReqFromMs(cMessage *msg)
 void BTS::processMsgCheckBtsFromMs(cMessage *msg)
 {
     EV << "==> [BTS] RCV: CHECK_BTS from MS\n";
-    int iClientAddr = msg->par("src");
+    const char* iClientAddr = msg->par("src");
     int iDest = msg->par("dest");
     msg->setName("BTS_DATA");
     msg->setKind(BTS_DATA);
@@ -129,22 +142,25 @@ void BTS::processMsgCheckBtsFromMs(cMessage *msg)
 void BTS::processMsgDiscReqFromMs(cMessage *msg)
 {
     ev << "==> [BTS] got DISC_REQ, sending DISC_ACK\n";
-    int iClientAddr = msg->par("src");
+    const char* iClientAddr = msg->par("src");
     msg->setName("DISC_ACK");
     msg->setKind(DISC_ACK);
     msg->par("dest") = iClientAddr;
     send(msg, "to_air");
-    iPhoneState[iClientAddr] = PHONE_STATE_DISCONNECTED; // Set the phone state to not connected
+    //iPhoneState[iClientAddr] = PHONE_STATE_DISCONNECTED; // Set the phone state to not connected
+    if(connectedPhones.count(iClientAddr) > 0){
+        connectedPhones.erase(iClientAddr);
+    }
     iConnections--;        // Decrease the number of current connections
 }
 
 void BTS::processMsgHandoverFromBsc(cMessage *msg)
 {
-    int iClientAddr = msg->par("src");
+    const char* iClientAddr = msg->par("src");
     int iDest = msg->par("dest");
     int iNewBTS = msg->par("newbts");
     int iMS = msg->par("ms");
-    if (iPhoneState[iMS] == PHONE_STATE_CONNECTED) {
+    if (connectedPhones.count(iClientAddr) != 0) {
         if (iNewBTS > -1)   // Disconnect MS and send the new bts number
                 {
             cMessage *handover_ms = new cPacket("HANDOVER_MS", HANDOVER_MS);
@@ -184,7 +200,7 @@ void BTS::processMsgForceCheckMsFromBsc(cMessage *msg)
 }
 void BTS::processMsgDataFromMs(cMessage *msg)
 {
-    int iClientAddr = msg->par("src");
+    const char* iClientAddr = msg->par("src");
     int iDest = msg->par("dest");
     msg->setName("BTS_DATA");
     msg->setKind(BTS_DATA);
@@ -205,7 +221,7 @@ void BTS::processMsgDataFromMs(cMessage *msg)
 
 void BTS::processMsgCheckLineFromMs(cMessage *msg)
 {
-    int iClientAddr = msg->par("src");
+    const char* iClientAddr = msg->par("src");
     int iDest = msg->par("dest");
     double dblPower = getRSSIFromPacket(msg);
     EV << "==> [BTS] RCV RSSI=" << dblPower << endl;

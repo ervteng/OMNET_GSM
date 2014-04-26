@@ -9,6 +9,7 @@
 #define BTS_H_
 
 #include <omnetpp.h>
+#include <set>
 
 // The BTS object
 class BTS: public cSimpleModule {
@@ -42,6 +43,8 @@ class BTS: public cSimpleModule {
         double dblYc;                                     // Y coordinate
         double dblRadius;                                 // Radius
         double dblWatt;                                   // Watt
+        std::set<const char*> connectedPhones;                   //Set of connected phones
+        const char* bcc;                                     //Address of the BTS
 };
 
 
