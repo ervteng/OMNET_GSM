@@ -9,6 +9,7 @@ simple BTS
         double watt = default(50); // the watt
         double phones; // number of phones
         string BCC = default("000");
+        double beaconInterval @unit(s) = default(1s);
     gates:
         input from_air; // gate for connecting to MS
         input from_bsc; // gate for connecting to BSC

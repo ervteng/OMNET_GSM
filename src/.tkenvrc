@@ -1,2 +1,5 @@
 # Partial Tkenv config file -- see $HOME/.tkenvrc as well
+inspector "GSMSIM.ms[0].radio" "GSMRadioModule" "1" "460x314+978+24:normal"
+inspector "GSMSIM" "GSMSIM" "2" "607x337+64+506:normal"
+inspector "CHECK_BTS" "cPacket" "1" "460x314+65+557:normal"
 

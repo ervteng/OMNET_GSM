@@ -31,7 +31,9 @@ class MS : public cSimpleModule, public INotifiable
         virtual void processMsgForceDisc(cMessage *msg); // Disconnect from BTS
         virtual void processMsgCheckMs(cMessage *msg); // Check MS for handover
         virtual void processMsgHandoverMs(cMessage *msg); // Handover request from BTS
+        virtual void processMsgBtsBeacon(cMessage *msg);
         virtual double getRSSIFromPacket(cMessage *msg);
+
 
     private:
         int iMissedCalls;               // number of missed calls
@@ -61,9 +63,15 @@ class MS : public cSimpleModule, public INotifiable
         const char* imsi;
         SimTime lastmsg;
         double min;
+        double beaconListenInterval;
+        SimTime lastBeaconUpdate;
         SimTime counter;
         SimTime alltime;
         cMessage *nextCall;
+
+        //Instrumentation vectors
+        cLongHistogram RSSIstats;
+        cOutVector currentRSSI;
 
 };
 

@@ -29,6 +29,7 @@ class BTS: public cSimpleModule {
         virtual void processMsgForceCheckMsFromBsc(cMessage *msg);
         virtual void processMsgDataFromMs(cMessage *msg);
         virtual void processMsgCheckLineFromMs(cMessage *msg);
+        virtual void sendBeacon();
         //virtual double getRssiFromRadio();
 //        virtual void activity();
         virtual void destroy();
@@ -46,7 +47,7 @@ class BTS: public cSimpleModule {
         double dblRadius;                                 // Radius
         double dblWatt;                                   // Watt
         std::set<std::string> connectedPhones;                   //Set of connected phones
-
+        double beaconInterval;
 };
 
 

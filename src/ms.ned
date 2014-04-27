@@ -24,6 +24,7 @@ simple MS
       	int numbts; // how many bts
      	double timeout @unit(s) = default(1s); // how long do you wait before timeout 
      	string imsi;
+     	double beaconListenInterval @unit(s) = default(30s); //how long to re-calculate beacon connection
     gates: 
         input from_air; // gate for connecting to BTS
         output to_air; // gate for connecting to BTS 	

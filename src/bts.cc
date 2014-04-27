@@ -27,6 +27,9 @@ void BTS::initialize()
     iPhoneState = new int[iPhones];             // Allocate buffer
     iConnections = 0;                           // Number of connections
     bcc = par("BCC");
+    beaconInterval = par("beaconInterval");
+    cMessage *beacon = new cMessage("SEND_BEACON");    // send the first scheduled move message
+    scheduleAt(simTime()+ 0.1,beacon);
 }
 
 // Get called to record statistics
@@ -72,7 +75,9 @@ void BTS::handleMessage(cMessage *msg)
 //    }
 
     if(msg->isSelfMessage()){
-        EV << "0000000000000000000000000000\n";
+
+        EV << "Time to send a Beacon!\n";
+        sendBeacon();
     }
     else{
         const char* intendedDest = msg->par("dest");
@@ -169,7 +174,7 @@ void BTS::processMsgHandoverFromBsc(cMessage *msg)
     if (connectedPhones.count(std::string(iMS)) != 0) {
         if (strcmp(iNewBTS,"no_bts")!=0)   // Disconnect MS and send the new bts number
                 {
-            cMessage *handover_ms = new cPacket("HANDOVER_MS", HANDOVER_MS);
+            cPacket *handover_ms = new cPacket("HANDOVER_MS", HANDOVER_MS);
             handover_ms->addPar(*new cMsgPar("newbts") = iNewBTS);
             handover_ms->addPar(*new cMsgPar("dest")) = iMS;
             handover_ms->addPar(*new cMsgPar("src")) = bcc;  //send to ms
@@ -179,7 +184,7 @@ void BTS::processMsgHandoverFromBsc(cMessage *msg)
                     << '\n';
             send(handover_ms, "to_air");
         } else {                            // Disconnect MS immediately
-            cMessage *force_disc = new cPacket("FORCE_DISC", FORCE_DISC);
+            cPacket *force_disc = new cPacket("FORCE_DISC", FORCE_DISC);
             force_disc->addPar(new cMsgPar("dest")) = iMS;
             force_disc->addPar(new cMsgPar("src")) = bcc;   //send to ms
             iConnections--;
@@ -237,11 +242,23 @@ void BTS::processMsgCheckLineFromMs(cMessage *msg)
 
     if ((dblPower < 0) || (dblPower < dblWatt * HANDOVER_LIMIT)) {
         // Check for handover
-        cMessage *handover_chk = new cPacket("HANDOVER_CHK", HANDOVER_CHK);
+        cMessage *handover_chk = new cMessage("HANDOVER_CHK", HANDOVER_CHK);
         handover_chk->addPar(*new cMsgPar("ms") = iClientAddr);
         handover_chk->addPar(*new cMsgPar("src") = bcc);
         handover_chk->addPar(*new cMsgPar("watt") = dblPower);
         EV << "==> [BTS] Sending HANDOVER_CHK to BSC\n";
         send(handover_chk, "to_bsc");
     }
+}
+
+void BTS::sendBeacon()
+{
+    cPacket *ms_beacon = new cPacket("BTS_BEACON", BTS_BEACON);
+    ms_beacon->addPar(*new cMsgPar("src") = bcc);
+    ms_beacon->addPar(*new cMsgPar("dest") = "all");
+    send(ms_beacon, "to_air");
+    cMessage *beacon = new cMessage("SEND_BEACON");    // send the first scheduled move message
+    // The Uniform is there to prevent the beacons from colliding. The real way is to use channel
+    // selection, but we do this in the interest of time.
+    scheduleAt(simTime()+ beaconInterval + uniform(0,0.1),beacon);
 }

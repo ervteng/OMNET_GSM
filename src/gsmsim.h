@@ -28,7 +28,7 @@ enum {
     CONN_REQ,            // connection request                [MS->BTS]
     CONN_ACK,            // connection acknowledgement        [BTS->MS]
     CHECK_LINE,          // check Mobile Station              [MS->BTS]
-    CHECK_BTS,           // check BTS                         [MS->BTS]
+    CHECK_BTS,         // check BTS                         [MS->BTS]
     CHECK_MS,            // check MS                          [BTS->MS]
     FORCE_CHECK_MS,      // check MS                          [BSC->BTS]
     FORCE_DISC,          // force disconnect                  [BTS->MS]
@@ -41,5 +41,7 @@ enum {
     HANDOVER_MS,         // handover MS, connect to new BTS   [BTS->MS]
     HANDOVER_BTS_DISC,   // handover BTS, disconnect MS       [BSC->BTS]
     DISC_REQ,            // disconnect request                [MS->BTS]
-    DISC_ACK             // disconnect acknowledgement        [BTS->MS]
+    DISC_ACK,            // disconnect acknowledgement        [BTS->MS]
+    BTS_BEACON,           // Beacon sent by BTS                [BTS->MS]
+    SCANNING     // Self-message used by MS to determine when to stop listenting for beacons [MS]
 };
