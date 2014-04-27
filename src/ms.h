@@ -38,7 +38,7 @@ class MS : public cSimpleModule, public INotifiable
         int iCalls;                     // number of calls
         int iBroken;                    // number of broken calls
         int iHandover;               // number of handovers
-        int connected;                  // BTS number if connected
+        const char* connected;                  // BTS number if connected
         int status;                     // Finite state machine
         int i;                        // the number of bts
         int type;                       // message type                          // program state                          // number of handovers
@@ -56,7 +56,7 @@ class MS : public cSimpleModule, public INotifiable
 
         cMessage *conn_req,*disc_req,*movecar,*allmsg;
         cMessage *check_bts,*check_ms,*check_line;
-        int selected;
+        const char* selected;
         int num_bts;
         const char* imsi;
         SimTime lastmsg;

@@ -16,6 +16,7 @@ class BTS: public cSimpleModule {
     //Module_Class_Members(BTS,cSimpleModule,16384);
     public:
         BTS();
+        const char* bcc;                                     //Address of the BTS
 
     protected:
         virtual void initialize();
@@ -32,6 +33,7 @@ class BTS: public cSimpleModule {
 //        virtual void activity();
         virtual void destroy();
 
+
     private:
         double calculateWatt(double dblMSXc, double dblMSYc); // Calculate current watt
         double getRSSIFromPacket(cMessage *msg); // Calculate current watt using recPower
@@ -43,8 +45,8 @@ class BTS: public cSimpleModule {
         double dblYc;                                     // Y coordinate
         double dblRadius;                                 // Radius
         double dblWatt;                                   // Watt
-        std::set<const char*> connectedPhones;                   //Set of connected phones
-        const char* bcc;                                     //Address of the BTS
+        std::set<std::string> connectedPhones;                   //Set of connected phones
+
 };
 
 

@@ -246,6 +246,7 @@ $O/air.o: air.cc \
 	gsmsim.h
 $O/bsc.o: bsc.cc \
 	bsc.h \
+	bts.h \
 	gsmsim.h
 $O/bts.o: bts.cc \
 	GSMRadio.h \

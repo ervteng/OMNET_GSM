@@ -5,6 +5,7 @@
 
 #include "gsmsim.h"
 #include "bsc.h"
+#include "bts.h"
 #include <omnetpp.h>
 
 Define_Module(BSC);
@@ -20,6 +21,7 @@ void BSC::initialize()
     num_bts = numbts;
     iWatts = new double[iPhones.longValue()];                        // Allocate buffers
     iBTS = new int[iPhones.longValue()];                            // Allocate buffers
+    isRouted = false;
 }
 
 
@@ -34,6 +36,10 @@ void BSC::destroy() {
 
 void BSC::handleMessage(cMessage *msg)
 {
+    if(!isRouted){
+        buildRoutingTable();
+        isRouted = true;
+    }
     int n = getNumParams();
     for (int i=0; i<n; i++) {
            cPar& p = par(i);
@@ -57,60 +63,62 @@ void BSC::handleMessage(cMessage *msg)
 
 void BSC::processHandoverEnd(cMessage *msg)
 {
-    int iMS = msg->par("ms");                    // MS identifier
-    int i = msg->par("bts");                    // old BTS identifier
+    const char* iMS = msg->par("ms");
+    std::string iMSstr = std::string(iMS);// MS identifier
+    const char* bts = msg->par("bts");                    // old BTS identifier
     cMessage *handover_bts_disc;
-
-    if (iBTS[iMS] > -1)           // if there is a better BTS for the MS
+    if (strcmp(MStoBTS[iMSstr].c_str(),"no_bts")!= 0)           // if there is a BTS for the MS
             {
-        if (iBTS[iMS] != i)    // not the original
+        if (strcmp(MStoBTS[iMSstr].c_str(),bts) !=0)    // not the original
                 {
             // Send the handover message to the old BTS
-            ev << " MS: " << iMS << " origBTS: " << i << " newBTS: "
-                    << iBTS[iMS] << "\n";
+            ev << " MS: " << iMS << " origBTS: " << bts << " newBTS: "
+                    << MStoBTS[iMSstr].c_str() << "\n";
             handover_bts_disc = new cMessage("HANDOVER_BTS_DISC",
                     HANDOVER_BTS_DISC);
-            handover_bts_disc->addPar(*new cMsgPar("newbts")) = iBTS[iMS];
-            handover_bts_disc->addPar(*new cMsgPar("src")) = 0;
-            handover_bts_disc->addPar(*new cMsgPar("dest")) = i;
+            handover_bts_disc->addPar(*new cMsgPar("newbts")) = MStoBTS[iMSstr].c_str();
+            handover_bts_disc->addPar(*new cMsgPar("src")) = "BSC";
+            handover_bts_disc->addPar(*new cMsgPar("dest")) = bts;
             handover_bts_disc->addPar(*new cMsgPar("ms")) = iMS;
-            send(handover_bts_disc, "to_bts", i);
+            sendToBTS(handover_bts_disc, bts);
         }
     } else {
         // No BTS to hand over, send disconnect to BTS and MS
         handover_bts_disc = new cMessage("HANDOVER_BTS_DISC",
                 HANDOVER_BTS_DISC);
-        handover_bts_disc->addPar(*new cMsgPar("newbts")) = -1;
-        handover_bts_disc->addPar(*new cMsgPar("src")) = 0;
-        handover_bts_disc->addPar(*new cMsgPar("dest")) = i;
+        handover_bts_disc->addPar(*new cMsgPar("newbts")) = "no_bts";
+        handover_bts_disc->addPar(*new cMsgPar("src")) = "BSC";
+        handover_bts_disc->addPar(*new cMsgPar("dest")) = bts;
         handover_bts_disc->addPar(*new cMsgPar("ms")) = iMS;
-        send(handover_bts_disc, "to_bts", i);
+        sendToBTS(handover_bts_disc, bts);
+        //send(handover_bts_disc, "to_bts", i);
     }
 }
 
 void BSC::processHandoverCheck(cMessage *msg)
 {
     bubble("HandoverCheck");
-    int iClientAddr = msg->par("src");            // Old BTS
-    int iMS = msg->par("ms");                    // MS
-    iWatts[iMS] = msg->par("watt");            // Current watt
+    const char * iClientAddr = msg->par("src");            // Old BTS
+    const char * iMS = msg->par("ms");
+    std::string iMSstr = std::string(iMS);// MS
+    MSRSSI[iMSstr] = msg->par("watt").doubleValue();            // Current watt
     cMessage *force_check_ms;
     simtime_t counter = simTime();
 
-    if (iWatts[iMS] == -1)     // if current is -1 (no connection)
+    if (MSRSSI[iMSstr] == -1)     // if current is -1 (no connection)
     {
-        iBTS[iMS] = -1;             // Set the BTS identifier to invalid
+        MStoBTS[iMSstr] = "no_bts";             // Set the BTS identifier to invalid
     } else {
-        iBTS[iMS] = iClientAddr;            // Set the old BTS number
+        MStoBTS[iMSstr] = std::string(iClientAddr);            // Set the old BTS number
     }
 
-    int i;
-    for (i = 0; i < num_bts; i++){      // Send check request to all BTSs
-        if (i != iClientAddr) {
+    int n = gateSize("to_bts");
+    for (int i = 0; i < n; i++){      // Send check request to all BTSs
+        if (i != routingTable[std::string(iClientAddr)]) {
             force_check_ms = new cMessage("FORCE_CHECK_MS",
                     FORCE_CHECK_MS);
-            force_check_ms->addPar(*new cMsgPar("dest")) = i;
-            force_check_ms->addPar(*new cMsgPar("src")) = 0;
+            force_check_ms->addPar(*new cMsgPar("dest")) = "bcast";
+            force_check_ms->addPar(*new cMsgPar("src")) = "BSC";
             force_check_ms->addPar(*new cMsgPar("ms")) = iMS;
             send(force_check_ms, "to_bts", i);
             ev << "Sending FORCE_CHECK_MS to BTS #" << i << "\n";
@@ -126,115 +134,40 @@ void BSC::processHandoverCheck(cMessage *msg)
 
 void BSC::processHandoverData(cMessage *msg)
 {
-    int iClientAddr = msg->par("src");
-    int iMS = msg->par("ms");
+    const char* iClientAddr = msg->par("src");
+    const char* iMS = msg->par("ms");
+    std::string iMSstr = std::string(iMS);
     double rssi = msg->par("watt");
-    ev << "got HANDOVER_DATA: Client: " << iClientAddr << " MS: " << iMS
-            << " RSSI: " << rssi << " oldRSSI:" << iWatts[iMS] << "\n";
-    if ((rssi > iWatts[iMS]) && (rssi != -1)) // if it's better then the old then save it
+    EV << "got HANDOVER_DATA: Client: " << iClientAddr << " MS: " << iMS
+            << " RSSI: " << rssi << " oldRSSI:" << MSRSSI[iMSstr] << "\n";
+    if ((rssi > MSRSSI[iMSstr]) && (rssi != -1)) // if it's better then the old then save it
             {
-        iWatts[iMS] = rssi;
-        iBTS[iMS] = iClientAddr;
+        MSRSSI[iMSstr] = rssi;
+        MStoBTS[iMSstr] = std::string(iClientAddr);
     }
 }
 
-//void BSC::activity() {
-//    cMessage *msg, *force_check_ms, *handover_end, *handover_bts_disc;
-//    int iType, iClientAddr = 0;
-//    int iMS;
-//    double delay = 0.4;
-//    double iWatt;
-//    int i;
-//    simtime_t counter;
-//
-//    cPar& iPhones = par("phones");                   // Get the number of phones
-//    cPar& numbts = par("numbts");                    // Get the number of bts
-//    int num_bts = numbts;
-//    iWatts = new double[iPhones.longValue()];                        // Allocate buffers
-//    iBTS = new int[iPhones.longValue()];                            // Allocate buffers
-//
-//    counter = simTime();
-//
-//    for (;;) {
-//        // receive msg
-//        msg = receive();
-//        iType = msg->getKind();
-//        switch (iType) {
-//
-//        case HANDOVER_END:            // We must decide, which bts is the winner
-//            iMS = msg->par("ms");                    // MS identifier
-//            i = msg->par("bts");                    // old BTS identifier
-//            if (iBTS[iMS] > -1)           // if there is a better BTS for the MS
-//                    {
-//                if (iBTS[iMS] != i)    // not the original
-//                        {
-//                    // Send the handover message to the old BTS
-//                    ev << " MS: " << iMS << " origBTS: " << i << " newBTS: "
-//                            << iBTS[iMS] << "\n";
-//                    handover_bts_disc = new cMessage("HANDOVER_BTS_DISC",
-//                            HANDOVER_BTS_DISC);
-//                    handover_bts_disc->addPar(*new cMsgPar("newbts")) = iBTS[iMS];
-//                    handover_bts_disc->addPar(*new cMsgPar("src")) = 0;
-//                    handover_bts_disc->addPar(*new cMsgPar("dest")) = i;
-//                    handover_bts_disc->addPar(*new cMsgPar("ms")) = iMS;
-//                    send(handover_bts_disc, "to_bts", i);
-//                }
-//            } else {
-//                // No BTS to hand over, send disconnect to BTS and MS
-//                handover_bts_disc = new cMessage("HANDOVER_BTS_DISC",
-//                        HANDOVER_BTS_DISC);
-//                handover_bts_disc->addPar(*new cMsgPar("newbts")) = -1;
-//                handover_bts_disc->addPar(*new cMsgPar("src")) = 0;
-//                handover_bts_disc->addPar(*new cMsgPar("dest")) = i;
-//                handover_bts_disc->addPar(*new cMsgPar("ms")) = iMS;
-//                send(handover_bts_disc, "to_bts", i);
-//            }
-//            break;
-//
-//        case HANDOVER_CHK:              // Request to check the MS from the BTSs
-//            iClientAddr = msg->par("src");            // Old BTS
-//            iMS = msg->par("ms");                    // MS
-//            iWatts[iMS] = msg->par("watt");            // Current watt
-//            if (iWatts[iMS] < 0)     // if current is below zero (no connection)
-//                    {
-//                iBTS[iMS] = -1;             // Set the BTS identifier to invalid
-//            } else {
-//                iBTS[iMS] = iClientAddr;            // Set the old BTS number
-//            }
-//            for (i = 0; i < num_bts; i++)      // Send check request to all BTSs
-//                    {
-//                if (i != iClientAddr) {
-//                    force_check_ms = new cMessage("FORCE_CHECK_MS",
-//                            FORCE_CHECK_MS);
-//                    force_check_ms->addPar(*new cMsgPar("dest")) = i;
-//                    force_check_ms->addPar(*new cMsgPar("src")) = 0;
-//                    force_check_ms->addPar(*new cMsgPar("ms")) = iMS;
-//                    send(force_check_ms, "to_bts", i);
-//                    ev << "Sending FORCE_CHECK_MS to BTS #" << i << "\n";
-//                };
-//            }
-//            // Send a scheduled message to myself to decide the handover
-//            handover_end = new cMessage("HANDOVER_END", HANDOVER_END);
-//            handover_end->addPar(*new cMsgPar("ms")) = iMS;
-//            handover_end->addPar(*new cMsgPar("bts")) = iClientAddr;
-//            counter = simTime() + delay;
-//            scheduleAt(counter, handover_end);
-//            break;
-//
-//        case HANDOVER_DATA:                            // Watt data from BTS
-//            iClientAddr = msg->par("src");
-//            iMS = msg->par("ms");
-//            iWatt = msg->par("watt");
-//            ev << "got HANDOVER_DATA: Client: " << iClientAddr << " MS: " << iMS
-//                    << " Watt: " << iWatt << " oldWatt:" << iWatts[iMS] << "\n";
-//            if ((iWatt > iWatts[iMS]) && (iWatt > 0)) // if it's better then the old then save it
-//                    {
-//                iWatts[iMS] = iWatt;
-//                iBTS[iMS] = iClientAddr;
-//            }
-//            break;
-//
-//        }
-//    }
-//}
+void BSC::sendToBTS(cMessage *msg, const char* BCC)
+{
+    int portNum = routingTable[std::string(BCC)];
+    send(msg, "to_bts", portNum);
+}
+
+
+// Maps the ports to the BTS addresses, so it only has to be done once.
+void BSC::buildRoutingTable()
+{
+    int n = gateSize("to_bts");
+    for(int x=0; x<n; x++){
+        const char* address = "hello";
+        cModule * refBTS;
+        BTS * refBTS2;
+        refBTS = gate("to_bts",x)->getNextGate()->getOwnerModule()->getSubmodule("bts_logic", -1);
+        refBTS2 = dynamic_cast<BTS*> (refBTS);
+        address = refBTS2->bcc;
+        routingTable[std::string(address)] = x;
+        EV << "BTS bcc: " << address << "is now mapped to port " << x << "\n";
+    }
+
+}
 

@@ -7,6 +7,7 @@
 
 #ifndef BSC_H_
 #define BSC_H_
+#include <map>
 
 // The BSC object
 class BSC: public cSimpleModule {
@@ -21,12 +22,19 @@ class BSC: public cSimpleModule {
         virtual void processHandoverEnd(cMessage *msg);
         virtual void processHandoverCheck(cMessage *msg);
         virtual void processHandoverData(cMessage *msg);
+        virtual void buildRoutingTable();
+        virtual void sendToBTS(cMessage *msg, const char* BCC);
 
     private:
         double *iWatts;              // Buffer to hold the max. watts for the phones
         int *iBTS;                          // Buffer to hold the bts for the phones
         double delay;
         int num_bts;
+        int i;
+        bool isRouted;
+        std::map<std::string, double> routingTable;
+        std::map<std::string, std::string> MStoBTS;
+        std::map<std::string, double> MSRSSI;
 };
 
 
