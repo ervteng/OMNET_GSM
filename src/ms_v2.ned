@@ -16,6 +16,7 @@
 package gsm_sim;
 
 import inet.mobility.models.LinearMobility;
+import inet.mobility.IMobility;
 import inet.linklayer.radio.GenericRadio;
 import inet.base.NotificationBoard;
 //
@@ -30,6 +31,9 @@ module MS_v2
         string imsi = default("00101");
         double initialX = default(0);
         double initialY = default(0);
+        string mobilityType = default("LinearMobility");
+        @statistic[coordX](title="coord X"; source="xCoord(mobilityPos(mobilityStateChanged))"; record=vector; interpolationmode=linear);
+        @statistic[coordY](title="coord Y"; source="yCoord(mobilityPos(mobilityStateChanged))"; record=vector; interpolationmode=linear);
     gates:
         input radioIn @directIn;
     submodules:
@@ -46,11 +50,11 @@ module MS_v2
             parameters:
                 @display("p=32,31");
         }
-        mobility: LinearMobility {
-            parameters:
-                @display("p=130,31");
-        }
+        mobility: <mobilityType> like IMobility {
 
+
+            @display("p=152,214");
+        }
         radio: GSMRadioModule {
             parameters:
                 bandwidth = 200000Hz;
