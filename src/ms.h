@@ -75,8 +75,9 @@ class MS : public cSimpleModule, public INotifiable
         cMessage *scanChannels;
 
         //Instrumentation vectors
-        cLongHistogram RSSIstats;
-        cOutVector currentRSSI;
+        simsignal_t beaconRSSIsignal;
+        //cLongHistogram RSSIstats;
+        //cOutVector currentRSSI;
 
         bool scanStatus;
 

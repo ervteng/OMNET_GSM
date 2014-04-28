@@ -25,6 +25,7 @@ simple MS
      	double timeout @unit(s) = default(1s); // how long do you wait before timeout 
      	string imsi;
      	double beaconListenInterval @unit(s) = default(30s); //how long to re-calculate beacon connection
+    	@statistic[RSSI](title="RSSI"; source="receivedRSSI"; record=vector,stats; interpolationmode=none);
     gates: 
         input from_air; // gate for connecting to BTS
         output to_air; // gate for connecting to BTS 	

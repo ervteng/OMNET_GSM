@@ -36,6 +36,10 @@ void MS::initialize(){
     scheduleAt(simTime(),movecar);
     min = 0;
 
+
+    // Set up instrumentation
+    beaconRSSIsignal = registerSignal("receivedRSSI");
+
     // FOR DEBUGGING ONLY
     //callinterval = 0.3;
 }
@@ -73,7 +77,6 @@ void MS::finish()
     recordScalar("# Handovers", iHandover);
     recordScalar("# Missed calls", iMissedCalls);
     recordScalar("# Broken calls", iBroken);
-    RSSIstats.recordAs("ReceivedRSSIs");
 }
 
 void MS::receiveChangeNotification(int category, const cObject *details)
@@ -264,8 +267,7 @@ void MS::processMsgBtsData(cMessage *msg)
     EV << "==> MS[" << imsi << "] RCV Rssi=" << rssi << endl;
     const char * testing = msg->par("src");
     EV << "FROM BTS " <<selected <<endl;
-    currentRSSI.record(rssi);
-    RSSIstats.collect(rssi);
+    emit(beaconRSSIsignal, rssi);
 //    if (i < num_bts-1){                        // If not all BTS checked
 //        i++;
 //        check_bts = new cPacket("CHECK_BTS",CHECK_BTS);
@@ -405,12 +407,14 @@ void MS::stopScanning()
     lastBeaconUpdate = simTime();
     if(min == 0){
         selected = "no_bts";
-        RSSIstats.collect(0);
-        currentRSSI.record(0);
+        //RSSIstats.collect(0);
+        //currentRSSI.record(0);
+        emit(beaconRSSIsignal, 0);
     }
     else{
-        RSSIstats.collect(min);
-        currentRSSI.record(min);
+        //RSSIstats.collect(min);
+        //currentRSSI.record(min);
+        emit(beaconRSSIsignal, min);
     }
     scanChannels = new cMessage( "START_SCANNING",START_SCANNING);
     scheduleAt(simTime()+ beaconListenInterval,scanChannels);
