@@ -33,6 +33,8 @@ class MS : public cSimpleModule, public INotifiable
         virtual void processMsgHandoverMs(cMessage *msg); // Handover request from BTS
         virtual void processMsgBtsBeacon(cMessage *msg);
         virtual double getRSSIFromPacket(cMessage *msg);
+        virtual void stopScanning();
+        virtual void startScanning();
 
 
     private:
@@ -40,7 +42,7 @@ class MS : public cSimpleModule, public INotifiable
         int iCalls;                     // number of calls
         int iBroken;                    // number of broken calls
         int iHandover;               // number of handovers
-        const char* connected;                  // BTS number if connected
+        std::string connected;                  // BTS number if connected
         int status;                     // Finite state machine
         int i;                        // the number of bts
         int type;                       // message type                          // program state                          // number of handovers
@@ -56,9 +58,9 @@ class MS : public cSimpleModule, public INotifiable
         double timeout;
         FILE *out;
 
-        cMessage *conn_req,*disc_req,*movecar,*allmsg;
-        cMessage *check_bts,*check_ms,*check_line;
-        const char* selected;
+        cPacket *conn_req,*disc_req,*allmsg;
+        cPacket *check_bts,*check_ms,*check_line;
+        std::string selected;
         int num_bts;
         const char* imsi;
         SimTime lastmsg;
@@ -67,11 +69,16 @@ class MS : public cSimpleModule, public INotifiable
         SimTime lastBeaconUpdate;
         SimTime counter;
         SimTime alltime;
-        cMessage *nextCall;
+
+        // Beginning trigger messages
+        cMessage *nextCall, *movecar;
+        cMessage *scanChannels;
 
         //Instrumentation vectors
         cLongHistogram RSSIstats;
         cOutVector currentRSSI;
+
+        bool scanStatus;
 
 };
 

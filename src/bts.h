@@ -48,6 +48,12 @@ class BTS: public cSimpleModule {
         double dblWatt;                                   // Watt
         std::set<std::string> connectedPhones;                   //Set of connected phones
         double beaconInterval;
+        cMessage *beaconTrigger;
+        cPacket *bts_beacon;
+        //Messages that go to the BSC
+        cMessage *handover_chk, *handover_data;
+        //MEssages that go over the air
+        cPacket *handover_ms, *force_disc;
 };
 
 

@@ -43,5 +43,6 @@ enum {
     DISC_REQ,            // disconnect request                [MS->BTS]
     DISC_ACK,            // disconnect acknowledgement        [BTS->MS]
     BTS_BEACON,           // Beacon sent by BTS                [BTS->MS]
-    SCANNING     // Self-message used by MS to determine when to stop listenting for beacons [MS]
+    STOP_SCANNING,     // Self-message used by MS to determine when to stop listenting for beacons [MS]
+    START_SCANNING
 };

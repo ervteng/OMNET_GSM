@@ -29,14 +29,15 @@ void MS::initialize(){
 
     nextCall = new cPacket("make_call");
     scheduleAt(callinterval+0.3, nextCall);
-
+    scanChannels = new cMessage( "START_SCANNING",START_SCANNING);
+    scheduleAt(simTime()+0.1,scanChannels);
     counter = simTime()+delay;
     lastBeaconUpdate = simTime();
     scheduleAt(simTime(),movecar);
-
+    min = 0;
 
     // FOR DEBUGGING ONLY
-    callinterval = 0.1;
+    //callinterval = 0.3;
 }
 // Write the logs at the end of the simulation
 void MS::finish()
@@ -70,6 +71,8 @@ void MS::finish()
     recordScalar("# Attempted Calls", iCalls);
     recordScalar("# Successful Calls", iCalls-iMissedCalls);
     recordScalar("# Handovers", iHandover);
+    recordScalar("# Missed calls", iMissedCalls);
+    recordScalar("# Broken calls", iBroken);
     RSSIstats.recordAs("ReceivedRSSIs");
 }
 
@@ -81,6 +84,7 @@ void MS::receiveChangeNotification(int category, const cObject *details)
 
 void MS::handleMessage(cMessage *msg)
 {
+    EV << "==> DEBUG: selected: "<<selected<<" \n";
 //    EV << "==> DEBUG: handleMessage: params\n";
 //    int n = getNumParams();
 //    for (int i=0; i<n; i++) {
@@ -97,10 +101,13 @@ void MS::handleMessage(cMessage *msg)
         if (type == TRIGGER){ // TODO Replace with selfmessage logic
             processMsgTrigger(msg);
         }
-        else if(type == SCANNING){
-            EV << "Stop looking for beacons" << endl;
-            lastBeaconUpdate = simTime();
+        else if(type == START_SCANNING){
+            startScanning();
         }
+        else if(type == STOP_SCANNING){
+            stopScanning();
+        }
+        //delete msg;
     }
     else if(type == BTS_BEACON){
         processMsgBtsBeacon(msg);
@@ -135,8 +142,8 @@ void MS::handleMessage(cMessage *msg)
         //Send connetion request to currently selected station
         //min=0.0;selected="no_bts";
 
-        EV << "TIme to attempt a call! sending message to" << selected <<endl;
-        if(strcmp(selected,"no_bts") == 0)
+        EV << "Time to attempt a call! sending message to " << selected <<endl;
+        if(selected=="no_bts")
         {
             EV << "We have no reception here. Sucks."<<endl;
         }
@@ -144,7 +151,7 @@ void MS::handleMessage(cMessage *msg)
             alltime=0;
             check_bts = new cPacket( "CHECK_BTS", CHECK_BTS );
             check_bts->addPar( *new cMsgPar("src")  = imsi );
-            check_bts->addPar( *new cMsgPar("dest") = selected );
+            check_bts->addPar( *new cMsgPar("dest") = selected.c_str() );
             ev << "Sending CHECK_BTS to all BTS" << '\n';
             send( check_bts, "to_air" );            // Send the first BTS check message
             status=CHECK_BTS;                        // New state
@@ -157,7 +164,7 @@ void MS::handleMessage(cMessage *msg)
         ev << "==> MS[" << imsi << "] sending DISC_REQ\n";
         disc_req = new cPacket( "DISC_REQ", DISC_REQ );
         disc_req->addPar("src") = imsi;
-        disc_req->addPar("dest") = connected;
+        disc_req->addPar("dest") = connected.c_str();
         send( disc_req, "to_air" );                // Send disconnect request to the BTS
         lastmsg=simTime();
         status=DISC_REQ;
@@ -186,12 +193,12 @@ void MS::processMsgTrigger(cMessage *msg)
 //                send(check_bts,"to_air");
 //                lastmsg=simTime();
 //            } else
-            if (strcmp(selected,"no_bts")!=0)                // there's an available BTS
+            if (selected != "no_bts")                // there's an available BTS
             {
-                ev << "==> MS[" << imsi << "] sending CONN_REQ to #" << selected << '\n';
+                ev << "==> MS[" << imsi << "] sending CONN_REQ to BTS: " << selected << '\n';
                 conn_req = new cPacket( "CONN_REQ",CONN_REQ);
                 conn_req->addPar( *new cMsgPar("src") =imsi);
-                conn_req->addPar( *new cMsgPar("dest")=selected);
+                conn_req->addPar( *new cMsgPar("dest")=selected.c_str());
                 send( conn_req, "to_air" );    // Send connection request
                 status=CONN_REQ;
                 lastmsg=simTime();
@@ -215,7 +222,7 @@ void MS::processMsgTrigger(cMessage *msg)
     case CONN_REQ:                            // Waiting for connection ack
         if (lastmsg+timeout>=simTime())
         {
-            if (strcmp(connected,"no_bts")!=0)                // If we were connected before
+            if (connected != "no_bts")                // If we were connected before
             {
                                             // Broken handover
                 iBroken++;
@@ -242,7 +249,7 @@ void MS::processMsgTrigger(cMessage *msg)
     case CONN_ACK:                            // Check for handover periodically
         check_line = new cPacket("CHECK_LINE",CHECK_LINE);
         check_line->addPar( *new cMsgPar("src") = imsi);
-        check_line->addPar( *new cMsgPar("dest") = connected );
+        check_line->addPar( *new cMsgPar("dest") = connected.c_str() );
         ev << "==> MS[" << imsi << "] Sending CHECK_LINE to #" << connected << '\n';
         send(check_line,"to_air");            // Sending CHECK_LINE message to BTS
         break;
@@ -255,13 +262,10 @@ void MS::processMsgBtsData(cMessage *msg)
     ev << "==> MS[" << imsi << "] got BTS_DATA\n";
     double rssi = getRSSIFromPacket(msg);
     EV << "==> MS[" << imsi << "] RCV Rssi=" << rssi << endl;
-    if (rssi > min)                        // More then the best
-    {
-        min=rssi;
-        selected=msg->par("src");
-        currentRSSI.record(min);
-        RSSIstats.collect(min);
-    };
+    const char * testing = msg->par("src");
+    EV << "FROM BTS " <<selected <<endl;
+    currentRSSI.record(rssi);
+    RSSIstats.collect(rssi);
 //    if (i < num_bts-1){                        // If not all BTS checked
 //        i++;
 //        check_bts = new cPacket("CHECK_BTS",CHECK_BTS);
@@ -270,11 +274,11 @@ void MS::processMsgBtsData(cMessage *msg)
 //        ev << "==> MS[" << imsi << "] Sending CHECK_BTS to #" << i << '\n';
 //        send(check_bts,"to_air");            // Send check_bts to the next BTS
 //        lastmsg=simTime();                    // Set the time of last msg
-    if (strcmp(selected,"no_bts")!=0) {                       // We have a good BTS, let's connect
+    if (selected != "no_bts") {                       // We have a good BTS, let's connect
         ev << "==> MS[" << imsi << "] sending CONN_REQ to #" << selected << '\n';
         conn_req = new cPacket( "CONN_REQ",CONN_REQ);
         conn_req->addPar( *new cMsgPar("src") = imsi);
-        conn_req->addPar( *new cMsgPar("dest") = selected);
+        conn_req->addPar( *new cMsgPar("dest") = selected.c_str());
         send( conn_req, "to_air" );            // Send connection request
         status=CONN_REQ;
         lastmsg=simTime();
@@ -344,13 +348,13 @@ void MS::processMsgCheckMs(cMessage *msg)
 void MS::processMsgHandoverMs(cMessage *msg)
 {
     ev << "==> MS[" << imsi << "] got HANDOVER_MS \n";
-    if (strcmp(connected,"no_bts") != 0){
+    if (connected != "no_bts"){
         ev << "got HANDOVER_MS \n";
-        selected = msg->par("newbts");
+        selected = std::string(msg->par("newbts"));
         ev << "sending CONN_REQ to BCC " << selected << '\n';
         conn_req = new cPacket( "CONN_REQ",CONN_REQ);// Sending connection request to new bts
         conn_req->addPar( *new cMsgPar("src") = imsi);
-        conn_req->addPar( *new cMsgPar("dest") = selected);
+        conn_req->addPar( *new cMsgPar("dest") = selected.c_str());
         send( conn_req, "to_air" );
         status=CONN_REQ;
         lastmsg=simTime();
@@ -364,24 +368,52 @@ void MS::processMsgHandoverMs(cMessage *msg)
 void MS::processMsgBtsBeacon(cMessage *msg)
 {
 
-    if(simTime() > (lastBeaconUpdate + beaconListenInterval) && status == TRIGGER )
+    if(scanStatus==true && status == TRIGGER )
     {// if the last time we updated from a beacon was too long ago
-        min = 0;
         ev << "==> MS[" << imsi << "] got BEACON\n";
         double rssi = getRSSIFromPacket(msg);
         EV << "==> MS[" << imsi << "] RCV Rssi=" << rssi << endl;
         if(rssi > min){
             min = rssi;
-            selected = msg->par("src");
-
-            //Record new RSSI
-            currentRSSI.record(min);
-            RSSIstats.collect(min);
+            selected = std::string(msg->par("src"));
+            EV << "==> MS[" << imsi << "] New Best!" << selected << endl;
         }
+
     }
-    cMessage * scanChannels = new cMessage( "SCANNING",SCANNING);// Sending connection request to new bts
+    else if(std::string(msg->par("src"))==selected) // If the beacon is from the currently connected BTS
+    {
+        double rssi = getRSSIFromPacket(msg);
+        min = rssi;
+    }
+    //delete msg;
+}
+
+void MS::startScanning()
+{
+    scanStatus = true;
+    min = 0;
+    scanChannels = new cMessage( "STOP_SCANNING",STOP_SCANNING);// Sending connection request to new bts
     // When the self message is received, stop listening for beacons.
     scheduleAt(simTime()+1, scanChannels);
+}
+
+void MS::stopScanning()
+{
+    scanStatus = false;
+    EV << "==> MS[" << imsi << "] Stop looking for beacons" << endl;
+    EV << "==> MS[" << imsi << "] The best BTS is "<< selected <<endl;
+    lastBeaconUpdate = simTime();
+    if(min == 0){
+        selected = "no_bts";
+        RSSIstats.collect(0);
+        currentRSSI.record(0);
+    }
+    else{
+        RSSIstats.collect(min);
+        currentRSSI.record(min);
+    }
+    scanChannels = new cMessage( "START_SCANNING",START_SCANNING);
+    scheduleAt(simTime()+ beaconListenInterval,scanChannels);
 }
 
 double MS::getRSSIFromPacket(cMessage *msg)
@@ -401,5 +433,6 @@ double MS::getRSSIFromPacket(cMessage *msg)
         return -1;
     }
 }
+
 
 
