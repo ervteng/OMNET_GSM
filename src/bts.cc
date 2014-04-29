@@ -11,15 +11,22 @@
 
 Define_Module(BTS);
 
-BTS::BTS() : cSimpleModule() {
+//simsignal_t BTS::connReqFromMsSignal = SIMSIGNAL_NULL;
+//simsignal_t BTS::sendBeaconSignal    = SIMSIGNAL_NULL;
+//simsignal_t BTS::checkLineFromMsSignal = SIMSIGNAL_NULL;
 
-}
+BTS::BTS() : cSimpleModule() {}
+
 
 void BTS::initialize()
 {
     ev << "Calling Initialize()...\n";
-    dblXc = par("xc");                          // X coordinate
-    dblYc = par("yc");                          // Y coordinate
+
+    // Register Signals
+    connReqFromMsSignal = registerSignal("connReqFromMs");
+    sendBeaconSignal = registerSignal("sendBeacon");
+    checkLineFromMsSignal = registerSignal("checkLineFromMs");
+
     dblWatt = par("watt");                      // Watt
     dblRadius = dblWatt * WATT_MULTIPLY;        // Radius
     iSlots = par("slots");           // How many connection can hold the bts
@@ -29,14 +36,17 @@ void BTS::initialize()
     bcc = par("BCC");
     beaconInterval = par("beaconInterval");
     beaconTrigger = new cMessage("SEND_BEACON");    // send the first scheduled move message
-    scheduleAt(simTime()+ 0.1,beaconTrigger);
-
+    double startTime = par("turnOnTime");
+    scheduleAt(simTime()+startTime,beaconTrigger);
+    EV << "BTS will turn on at "<<startTime << endl;
 }
 
 // Get called to record statistics
 void BTS::finish()
 {
     ev << "Calling finished()...\n";
+    simtime_t t = simTime();
+    recordScalar("simulated time", t);
 }
 
 void BTS::destroy() {
@@ -74,10 +84,13 @@ void BTS::handleMessage(cMessage *msg)
 //           ev << "  type:" << cPar::getTypeName(p.getType()) << "\n";
 //           ev << "  contains:" << p.str() << "\n";
 //    }
-
     if(msg->isSelfMessage()){
         EV << "Time to send a Beacon!\n";
         sendBeacon();
+    }
+    else if(!isOn){
+            delete msg;
+            return;
     }
     else{
         const char* intendedDest = msg->par("dest");
@@ -123,6 +136,7 @@ void BTS::processMsgConnReqFromMs(cMessage *msg)
         connectedPhones.insert(std::string(iClientAddr));
         iConnections++;    // Increase the number of current connections
     }
+    emit(connReqFromMsSignal, iConnections);
 }
 
 void BTS::processMsgCheckBtsFromMs(cMessage *msg)
@@ -236,6 +250,7 @@ void BTS::processMsgCheckLineFromMs(cMessage *msg)
     //const char* iDest = msg->par("dest");
     double dblPower = getRSSIFromPacket(msg);
     EV << "==> [BTS] RCV RSSI=" << dblPower << endl;
+    emit(checkLineFromMsSignal, dblPower);
 
 //    EV << " Watt:" << dblPower << " Watt limit "
 //       << dblWatt * HANDOVER_LIMIT << "\n";
@@ -258,6 +273,8 @@ void BTS::sendBeacon()
     bts_beacon->addPar(*new cMsgPar("dest") = "all");
     send(bts_beacon, "to_air");
 
+    emit(sendBeaconSignal, 1);
+    isOn = true;
        // send the first scheduled move message
     // The Uniform is there to prevent the beacons from colliding. The real way is to use channel
     // selection, but we do this in the interest of time.
