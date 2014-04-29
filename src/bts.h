@@ -54,6 +54,11 @@ class BTS: public cSimpleModule {
         cMessage *handover_chk, *handover_data;
         //MEssages that go over the air
         cPacket *handover_ms, *force_disc;
+
+        // Signal
+        simsignal_t connReqFromMsSignal;
+        simsignal_t sendBeaconSignal;
+        simsignal_t checkLineFromMsSignal;
 };
 
 
