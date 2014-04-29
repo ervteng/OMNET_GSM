@@ -28,28 +28,6 @@ import inet.world.radio.ChannelControl;
 //
 
 
-
-
-//
-// Interface declaration for different modules implementing Base Transciever Station
-//
-
-
-
-////
-//// Interface declaration for different modules implementing Base Station Controller
-////
-//simple BSC
-//{
-//    parameters:
-//        int phones; // number of phones
-//        int numbts; // number of bts
-//    gates:
-//        input from_bts[]; // gate for connecting to BTS
-//        output to_bts[]; // gate for connecting to BTS
-//}
-
-
 //
 // The network
 //
@@ -60,25 +38,13 @@ network GSMSIM
         int number_bts = default(1);
         double xwidth = default(10000);
         double ydepth = default(10000);
-//    types:
-//        channel Abis extends DatarateChannel
-//        {
-//            delay = 10ms;
-//            datarate = 5Mbps;
-//        }
+    //    types:
+    //        channel Abis extends DatarateChannel
+    //        {
+    //            delay = 10ms;
+    //            datarate = 5Mbps;
+    //        }
     submodules:
-//        air: Air {
-//            parameters:
-//                @display("p=120,180;i=cloud");
-//            gates:
-//                to_ms[number_ms];
-//                from_ms[number_ms];
-//                to_bts[number_bts];
-//                from_bts[number_bts];
-//        }
-            //parameters:
-           		//@display("p=120,180;i=cloud");
-        //}
         bsc: BSC {
             parameters:
                 numbts = number_bts;
@@ -104,13 +70,23 @@ network GSMSIM
         bts[number_bts]: BTS_v2 {
             parameters:
                 bts_logic.phones = number_ms;
-                //xc = input(10000,"X coordinate"), // X coordinate
-                // yc = input(10000,"Y coordinate"), // Y coordinate
-                bts_logic.xc = default(10000); // X coordinate
-                bts_logic.yc = default(10000); // Y coordinate
-                //slots = input(3,"Max. users"); // how many users it can hold
                 bts_logic.slots = default(3); // how many users it can hold
                 @display("p=30,120");
+        }
+        malicious_bts: BTS_v2 {
+            parameters:
+                bts_logic.phones = number_ms;
+                bts_logic.slots = default(3); // how many users it can hold
+                @display("p=200,200");
+        }
+        malicious_bsc: BSC {
+            parameters:
+                numbts = 1;
+                phones = number_ms;
+                @display("p=300,200;i=router");
+            gates:
+                from_bts[1];
+                to_bts[1];
         }
         channelControl: ChannelControl {
             coreDebug = true;
@@ -123,19 +99,8 @@ network GSMSIM
             bts[i].to_bsc --> bsc.from_bts[i];
             bts[i].from_bsc <-- bsc.to_bts[i];
         }
+        malicious_bts.to_bsc --> malicious_bsc.from_bts[0];
+        malicious_bts.from_bsc <-- malicious_bsc.to_bts[0];
         //endfor; 
 }
-
-
-//network gsmsim : GSMSIM {
-//    parameters: 
-////        number_bts = input(1,"Number of stations:"); 
-////        number_ms = input(1,"Number of cars:"); 
-////        xwidth = input(10000,"Width of the plane [m]:"); 
-////        ydepth = input(10000,"Depth of the plane [m]:"); 
-//        number_bts = 1; 
-//        number_ms = 1; 
-//        xwidth = 10000; 
-//        ydepth = 10000; 
-//} 
 
