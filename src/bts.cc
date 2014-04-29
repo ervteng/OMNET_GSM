@@ -66,7 +66,7 @@ void BTS::finish()
     ev << "Calling finished()...\n";
     simtime_t t = simTime();
     recordScalar("simulated time", t);
-    delete handover_ms, force_disc;
+//    delete handover_ms, force_disc;
 }
 
 void BTS::destroy() {
