@@ -84,6 +84,7 @@ void BTS::handleMessage(cMessage *msg)
 //           ev << "  type:" << cPar::getTypeName(p.getType()) << "\n";
 //           ev << "  contains:" << p.str() << "\n";
 //    }
+
     if(msg->isSelfMessage()){
         EV << "Time to send a Beacon!\n";
         sendBeacon();
