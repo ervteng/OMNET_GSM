@@ -10,7 +10,17 @@
 
 Define_Module(MS);
 
-MS::MS(){}
+MS::MS(): cSimpleModule() {}
+
+MS::~MS()
+{
+    //delete conn_req,disc_req,allmsg;
+    //delete check_bts,check_ms,check_line;
+    cancelAndDelete(nextCall);
+    cancelAndDelete(movecar);
+    cancelAndDelete(scanChannelsStart);
+    cancelAndDelete(scanChannelsStop);
+}
 
 void MS::initialize(){
     status=TRIGGER;                            // program state                          // number of handovers
@@ -29,14 +39,18 @@ void MS::initialize(){
 
     nextCall = new cPacket("make_call");
     scheduleAt(callinterval+0.3, nextCall);
-    scanChannels = new cMessage( "START_SCANNING",START_SCANNING);
-    scheduleAt(simTime()+0.1,scanChannels);
+    //scanChannels = new cMessage( "START_SCANNING",START_SCANNING);
+    //scheduleAt(simTime()+0.1,scanChannels);
     counter = simTime()+delay;
     lastBeaconUpdate = simTime();
     scheduleAt(simTime(),movecar);
     min = 0;
 
+    // Set up selfmessages
+    scanChannelsStart = new cMessage( "START_SCANNING",START_SCANNING);
+    scanChannelsStop = new cMessage( "STOP_SCANNING",STOP_SCANNING);
 
+    scheduleAt(simTime()+0.1,scanChannelsStart);
     // Set up instrumentation
     beaconRSSIsignal = registerSignal("receivedRSSI");
 
@@ -179,7 +193,7 @@ void MS::processMsgTrigger(cMessage *msg)
 {
 
     alltime+=delay;
-    movecar = new cPacket("TRIGGER",TRIGGER);// send new scheduled message
+    //movecar = new cPacket("TRIGGER",TRIGGER);// send new scheduled message
     counter = simTime()+delay;
     scheduleAt(counter,movecar);
     switch (status){
@@ -297,6 +311,7 @@ void MS::processMsgBtsData(cMessage *msg)
         //fprintf(out,"At %s = MS#%d Missed call\n",simtimeToStr(lastmsg),imsi);
         fclose(out);
     }
+    delete msg;
 }
 
 void MS::processMsgConnAck(cMessage *msg)
@@ -345,6 +360,7 @@ void MS::processMsgCheckMs(cMessage *msg)
     check_ms->addPar( *new cMsgPar("src") = imsi);
     check_ms->addPar( *new cMsgPar("dest") = msg->par("src"));
     send( check_ms, "to_air" );                // Send back the current position
+    delete msg;
 }
 
 void MS::processMsgHandoverMs(cMessage *msg)
@@ -365,6 +381,7 @@ void MS::processMsgHandoverMs(cMessage *msg)
         //fprintf(out,"At %s = MS#%d HANDOVER from %d to %d\n",simtimeToStr(lastmsg),imsi,connected,selected);
         fclose(out);
     }
+    delete msg;
 }
 
 void MS::processMsgBtsBeacon(cMessage *msg)
@@ -387,16 +404,16 @@ void MS::processMsgBtsBeacon(cMessage *msg)
         double rssi = getRSSIFromPacket(msg);
         min = rssi;
     }
-    //delete msg;
+    delete msg;
 }
 
 void MS::startScanning()
 {
     scanStatus = true;
     min = 0;
-    scanChannels = new cMessage( "STOP_SCANNING",STOP_SCANNING);// Sending connection request to new bts
+    //scanChannelsStop = new cMessage( "STOP_SCANNING",STOP_SCANNING);// Sending connection request to new bts
     // When the self message is received, stop listening for beacons.
-    scheduleAt(simTime()+1, scanChannels);
+    scheduleAt(simTime()+1, scanChannelsStop);
 }
 
 void MS::stopScanning()
@@ -416,8 +433,8 @@ void MS::stopScanning()
         //currentRSSI.record(min);
         emit(beaconRSSIsignal, min);
     }
-    scanChannels = new cMessage( "START_SCANNING",START_SCANNING);
-    scheduleAt(simTime()+ beaconListenInterval,scanChannels);
+    //scanChannelsStart = new cMessage( "START_SCANNING",START_SCANNING);
+    scheduleAt(simTime()+ beaconListenInterval,scanChannelsStart);
 }
 
 double MS::getRSSIFromPacket(cMessage *msg)

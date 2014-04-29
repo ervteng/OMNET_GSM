@@ -6,8 +6,8 @@
 #include "omnetpp.h"
 
 // Defines for the call statistics
-#define CALL_LENGTH_MIN 60
-#define CALL_LENGTH 50
+#define CALL_LENGTH_MIN 30
+#define CALL_LENGTH 25
 #define CALL_INTERVAL_MIN 5
 #define CALL_INTERVAL 5
 #define CALL_RETRY_LENGTH_MIN 5

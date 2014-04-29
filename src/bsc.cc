@@ -93,6 +93,7 @@ void BSC::processHandoverEnd(cMessage *msg)
         sendToBTS(handover_bts_disc, bts);
         //send(handover_bts_disc, "to_bts", i);
     }
+    delete msg;
 }
 
 void BSC::processHandoverCheck(cMessage *msg)
@@ -130,6 +131,7 @@ void BSC::processHandoverCheck(cMessage *msg)
     handover_end->addPar(*new cMsgPar("bts")) = iClientAddr;
     counter = simTime() + delay;
     scheduleAt(counter, handover_end);
+    delete msg;
 }
 
 void BSC::processHandoverData(cMessage *msg)
@@ -145,6 +147,7 @@ void BSC::processHandoverData(cMessage *msg)
         MSRSSI[iMSstr] = rssi;
         MStoBTS[iMSstr] = std::string(iClientAddr);
     }
+    delete msg;
 }
 
 void BSC::sendToBTS(cMessage *msg, const char* BCC)

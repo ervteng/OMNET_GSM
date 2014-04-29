@@ -16,7 +16,10 @@ Define_Module(BTS);
 //simsignal_t BTS::checkLineFromMsSignal = SIMSIGNAL_NULL;
 
 BTS::BTS() : cSimpleModule() {}
-
+BTS::~BTS()
+{
+    cancelAndDelete(beaconTrigger);
+}
 
 void BTS::initialize()
 {
@@ -63,6 +66,7 @@ void BTS::finish()
     ev << "Calling finished()...\n";
     simtime_t t = simTime();
     recordScalar("simulated time", t);
+    delete handover_ms, force_disc;
 }
 
 void BTS::destroy() {
@@ -247,7 +251,8 @@ void BTS::processMsgHandoverFromBsc(cMessage *msg)
             emit(forceDiscSignal, 1);
         }
     }
-
+    // Memory
+    delete msg;
     emit(numConnectionsSignal, numConnections);
 }
 
@@ -266,15 +271,16 @@ void BTS::processMsgForceCheckMsFromBsc(cMessage *msg)
     else {
         emit(errNoSlotSignal, errNoSlot);
     }
+    delete msg;
 }
 void BTS::processMsgDataFromMs(cMessage *msg)
 {
     const char* iClientAddr = msg->par("src");
     const char* iDest = msg->par("dest");
-    msg->setName("BTS_DATA");
-    msg->setKind(BTS_DATA);
-    msg->par("dest") = iClientAddr;
-    msg->par("src") = iDest;
+//    msg->setName("BTS_DATA");
+//    msg->setKind(BTS_DATA);
+//    msg->par("dest") = iClientAddr;
+//    msg->par("src") = iDest;
     double dblPower = getRSSIFromPacket(msg);
     if ((dblPower != -1) && (numConnections < numSlots)) // if it sees the ms and has free slot
             {
@@ -292,6 +298,7 @@ void BTS::processMsgDataFromMs(cMessage *msg)
     else {
         emit(errNoSlotSignal, errNoSlot);
     }
+    delete msg;
 }
 
 void BTS::processMsgCheckLineFromMs(cMessage *msg)
@@ -316,6 +323,7 @@ void BTS::processMsgCheckLineFromMs(cMessage *msg)
     else {
         emit(errNoSlotSignal, errNoSlot);
     }
+    delete msg;
 }
 
 void BTS::sendBeacon()

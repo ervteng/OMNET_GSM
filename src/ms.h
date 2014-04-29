@@ -19,6 +19,7 @@ class MS : public cSimpleModule, public INotifiable
     //Module_Class_Members(MS,cSimpleModule,16384)
     public:
         MS();
+        ~MS();
     protected:
         virtual void initialize();
         virtual void handleMessage(cMessage *msg);
@@ -72,7 +73,7 @@ class MS : public cSimpleModule, public INotifiable
 
         // Beginning trigger messages
         cMessage *nextCall, *movecar;
-        cMessage *scanChannels;
+        cMessage *scanChannelsStart, *scanChannelsStop;
 
         //Instrumentation vectors
         simsignal_t beaconRSSIsignal;

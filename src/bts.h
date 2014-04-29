@@ -16,6 +16,7 @@ class BTS: public cSimpleModule {
     //Module_Class_Members(BTS,cSimpleModule,16384);
     public:
         BTS();
+        ~BTS();
         const char* bcc;                                     //Address of the BTS
 
     protected:
