@@ -34,11 +34,6 @@ module MS_v2
         string mobilityType = default("LinearMobility");
         @statistic[coordX](title="coord X"; source="xCoord(mobilityPos(mobilityStateChanged))"; record=vector; interpolationmode=linear);
         @statistic[coordY](title="coord Y"; source="yCoord(mobilityPos(mobilityStateChanged))"; record=vector; interpolationmode=linear);
-        @statistic[attemptedCall](title="The number of attempted calls"; record=count,vector );
-        @statistic[successfulCall](title="The number of successful calls"; record=count,vector );
-        @statistic[missedCall](title="The number of missed calls"; record=count,vector );
-        @statistic[brokenCall](title="The number of broken calls"; record=count,vector );
-        @statistic[handoverCall](title="The number of handover calls"; record=count,vector );
     gates:
         input radioIn @directIn;
     submodules:

@@ -65,6 +65,7 @@ void MS::initialize(){
     missedCallSignal = registerSignal("missedCall");
     brokenCallSignal = registerSignal("brokenCall");
     handoverCallSignal = registerSignal("handoverCall");
+    disconnectedCallSignal = registerSignal("disconnectedCall");
     // FOR DEBUGGING ONLY
     //callinterval = 0.3;
 
@@ -192,15 +193,15 @@ void MS::processMsgTrigger(cMessage *msg)
                 status=CONN_REQ;
                 lastmsg=simTime();
                 attemptedCalls++;
-                emit(attemptedCallSignal, attemptedCalls);
+                emit(attemptedCallSignal, 1);
 
             } else
             {                                // no available BTS
                 attemptedCalls++;
-                emit(attemptedCallSignal, attemptedCalls);
+                emit(attemptedCallSignal, 1);
 
                 missedCalls++;
-                emit(missedCallSignal, missedCalls);
+                emit(missedCallSignal, 1);
 
                 ev << "==> MS[" << imsi << "] Can't connect (CHECK_BTS). Error #" << missedCalls;
                 // calculate new parameters
@@ -219,13 +220,13 @@ void MS::processMsgTrigger(cMessage *msg)
             {
                 // Broken handover
                 brokenCalls++;
-                emit(brokenCallSignal, brokenCalls);
+                emit(brokenCallSignal, 1);
             }
             else
             {
                 // Can't make a new call
                 missedCalls++;
-                emit(missedCallSignal, missedCalls);
+                emit(missedCallSignal, 1);
 
             }
             ev << "==> MS[" << imsi << "] Can't connect (CONN_REQ). Error #" << missedCalls;
@@ -238,8 +239,6 @@ void MS::processMsgTrigger(cMessage *msg)
         break;
 
     case CONN_ACK:                            // Check for handover periodically
-        successfullCalls++;
-        emit(successfulCallSignal, successfullCalls);
         check_line = new cPacket("CHECK_LINE",CHECK_LINE);
         check_line->addPar( *new cMsgPar("src") = imsi);
         check_line->addPar( *new cMsgPar("dest") = connected.c_str() );
@@ -275,12 +274,12 @@ void MS::processMsgBtsData(cMessage *msg)
         status=CONN_REQ;
         lastmsg=simTime();
         attemptedCalls++;
-        emit(attemptedCallSignal, attemptedCalls);
+        emit(attemptedCallSignal, 1);
     } else {                                        // No answer from BTSs
         attemptedCalls++;
-        emit(attemptedCallSignal, attemptedCalls);
+        emit(attemptedCallSignal, 1);
         missedCalls++;
-        emit(missedCallSignal, missedCalls);
+        emit(missedCallSignal, 1);
 
         ev << "Can't connect. (CHECK_BTS) Error #" << missedCalls;
 
@@ -301,6 +300,9 @@ void MS::processMsgConnAck(cMessage *msg)
     status=CONN_ACK;
     lastmsg=simTime();
     alltime=0;                                // Reset the timer
+
+    successfullCalls++;
+    emit(successfulCallSignal, 1);
 }
 
 void MS::processMsgDiscAck(cMessage *msg)
@@ -314,6 +316,8 @@ void MS::processMsgDiscAck(cMessage *msg)
     callinterval = CALL_INTERVAL + exponential(CALL_INTERVAL_MIN);
     calllength = CALL_LENGTH_MIN + exponential(CALL_LENGTH);
     connected = "no_bts";
+
+    emit(disconnectedCallSignal, 1);
 }
 
 void MS::processMsgForceDisc(cMessage *msg)
@@ -327,8 +331,9 @@ void MS::processMsgForceDisc(cMessage *msg)
     callinterval = CALL_RETRY_INTERVAL_MIN + exponential(CALL_RETRY_INTERVAL);
     calllength = CALL_RETRY_LENGTH_MIN /2 + exponential(CALL_RETRY_LENGTH) /2;
     connected = "no_bts";                            // Not connected to a BTS
+
     brokenCalls++;
-    emit(brokenCallSignal, brokenCalls);
+    emit(brokenCallSignal, 1);
 
 }
 
@@ -356,7 +361,7 @@ void MS::processMsgHandoverMs(cMessage *msg)
         status=CONN_REQ;
         lastmsg=simTime();
         handOverCalls++;
-        emit(handoverCallSignal, handOverCalls);
+        emit(handoverCallSignal, 1);
 
     }
     delete msg;
