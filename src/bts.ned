@@ -9,9 +9,22 @@ simple BTS
         string BCC = default("000");
         double beaconInterval @unit(s) = default(1s);
 //        @signal[connReqFromMs](type=int);
-        @statistic[connReqFromMs](title="Connection Request From MS"; record=stats,vector );
-        @statistic[sendBeacon](title="Send beacon"; record=stats,vector );
-        @statistic[checkLineFromMs](title="Line check"; source="checkLineFromMs"; record=stats,vector);
+        @statistic[connReqFromMs](title="Connection Request From MS"; record=count );
+        @statistic[sendBeacon](title="Send beacon"; record=count );
+        @statistic[numConnections](title="The number of connections"; record=count,vector );
+        @statistic[errNoSlot](title="Error Not Slot"; record=count,vector );
+        @statistic[handOverToBsc](title="Count handover to BSC"; record=count,vector );
+        @statistic[handOverToMs](title="Count handover to MS"; record=count,vector );
+        @statistic[handOverCheckToBsc](title="Count handover check to BSC"; record=count,vector );
+        @statistic[handOverCheckFromMs](title="Count handover check from MS"; record=count,vector );
+        @statistic[forceDisc](title="Force Disconnect to MS"; record=count );
+
+//        @statistic[checkLineFromMs](title="Line check"; source="checkLineFromMs"; record=stats,vector);
+        
+//        // Dynamic stats
+////        @signal[phone*-rssi](type=double); // note the wildcard
+//        @statisticTemplate[phoneRssi](record=stats,vector);
+        
     gates:
         input from_air; // gate for connecting to MS
         input from_bsc; // gate for connecting to BSC

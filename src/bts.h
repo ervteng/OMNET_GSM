@@ -38,9 +38,9 @@ class BTS: public cSimpleModule {
     private:
         double calculateWatt(double dblMSXc, double dblMSYc); // Calculate current watt
         double getRSSIFromPacket(cMessage *msg); // Calculate current watt using recPower
-        int iSlots;                                        // How many connection can hold the bts
-        int iPhones;                                       // Number of phones
-        int iConnections;
+        int numSlots;                                        // How many connection can hold the bts
+        int numPhones;                                       // Number of phones
+        int numConnections;
         int *iPhoneState;                                 // Buffer to hold the phone states
         double dblXc;                                     // X coordinate
         double dblYc;                                     // Y coordinate
@@ -58,7 +58,21 @@ class BTS: public cSimpleModule {
         // Signal
         simsignal_t connReqFromMsSignal;
         simsignal_t sendBeaconSignal;
-        simsignal_t checkLineFromMsSignal;
+        simsignal_t numConnectionsSignal;
+        simsignal_t errNoSlotSignal;
+        simsignal_t handOverToBscSignal;
+        simsignal_t handOverToMsSignal;
+        simsignal_t handOverCheckFromMsSignal;
+        simsignal_t handOverCheckToBscSignal;
+        simsignal_t forceDiscSignal;
+
+        // Stats counters
+        int errNoSlot;
+        int connReqFromMsCount;
+        int handOverToBscCount;
+        int handOverToMsCount;
+        int handOverCheckFromMsCount;
+        int handOverCheckToBscCount;
 };
 
 

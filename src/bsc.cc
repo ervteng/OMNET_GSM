@@ -141,7 +141,7 @@ void BSC::processHandoverData(cMessage *msg)
     EV << "got HANDOVER_DATA: Client: " << iClientAddr << " MS: " << iMS
             << " RSSI: " << rssi << " oldRSSI:" << MSRSSI[iMSstr] << "\n";
     if ((rssi > MSRSSI[iMSstr]) && (rssi != -1)) // if it's better then the old then save it
-            {
+    {
         MSRSSI[iMSstr] = rssi;
         MStoBTS[iMSstr] = std::string(iClientAddr);
     }

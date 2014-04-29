@@ -22,21 +22,35 @@ void BTS::initialize()
 {
     ev << "Calling Initialize()...\n";
 
-    // Register Signals
-    connReqFromMsSignal = registerSignal("connReqFromMs");
-    sendBeaconSignal = registerSignal("sendBeacon");
-    checkLineFromMsSignal = registerSignal("checkLineFromMs");
-
     dblWatt = par("watt");                      // Watt
     dblRadius = dblWatt * WATT_MULTIPLY;        // Radius
-    iSlots = par("slots");           // How many connection can hold the bts
-    iPhones = par("phones");                // Number of phones
-    iPhoneState = new int[iPhones];             // Allocate buffer
-    iConnections = 0;                           // Number of connections
+    numSlots = par("slots");           // How many connection can hold the bts
+    numPhones = par("phones");                // Number of phones
+    iPhoneState = new int[numPhones];             // Allocate buffer
+    numConnections = 0;                           // Number of connections
     bcc = par("BCC");
     beaconInterval = par("beaconInterval");
     beaconTrigger = new cMessage("SEND_BEACON");    // send the first scheduled move message
     scheduleAt(simTime()+ 0.1,beaconTrigger);
+
+    // Register Signals
+    connReqFromMsSignal = registerSignal("connReqFromMs");
+    sendBeaconSignal = registerSignal("sendBeacon");
+    numConnectionsSignal = registerSignal("numConnections");
+    errNoSlotSignal = registerSignal("errNoSlot");
+    handOverToBscSignal = registerSignal("handOverToBsc");
+    handOverToMsSignal = registerSignal("handOverToMs");
+    handOverCheckToBscSignal = registerSignal("handOverCheckToBsc");
+    handOverCheckFromMsSignal = registerSignal("handOverCheckFromMs");
+    forceDiscSignal = registerSignal("forceDisc");
+
+    // Error
+    errNoSlot = 0;
+    connReqFromMsCount = 0;
+    handOverToBscCount = 0;
+    handOverToMsCount = 0;
+    handOverCheckFromMsCount = 0;
+    handOverCheckToBscCount = 0;
 
 }
 
@@ -76,14 +90,6 @@ double BTS::getRSSIFromPacket(cMessage *msg) {
 
 void BTS::handleMessage(cMessage *msg)
 {
-//    int n = getNumParams();
-//    for (int i=0; i<n; i++) {
-//           cPar& p = par(i);
-//           ev << "parameter: " << p.getName() << "\n";
-//           ev << "  type:" << cPar::getTypeName(p.getType()) << "\n";
-//           ev << "  contains:" << p.str() << "\n";
-//    }
-
     if(msg->isSelfMessage()){
         EV << "Time to send a Beacon!\n";
         sendBeacon();
@@ -119,20 +125,28 @@ void BTS::processMsgConnReqFromMs(cMessage *msg)
 {
     EV << "==> [BTS] RCV: CONN_REQ from MS\n";
     const char* iClientAddr = msg->par("src");
-    if (iConnections < iSlots)                // If there is a free slot
+    if (numConnections < numSlots)                // If there is a free slot
     {
         EV << "==> [BTS] client is addr=" << iClientAddr
            << ", sending CONN_ACK free slots left:"
-           << iSlots - iConnections - 1 << '\n';
+           << numSlots - numConnections - 1 << '\n';
         msg->setName("CONN_ACK");
         msg->setKind(CONN_ACK);
         msg->par("dest") = iClientAddr;
         send(msg, "to_air");
         //iPhoneState[iClientAddr] = PHONE_STATE_CONNECTED; // Set the phone state to connected
         connectedPhones.insert(std::string(iClientAddr));
-        iConnections++;    // Increase the number of current connections
+        numConnections++;    // Increase the number of current connections
+    }else {
+        EV << "==> [BTS] Error: no slot available\n";
+        errNoSlot++;
+
+        emit(errNoSlotSignal, errNoSlot);
     }
-    emit(connReqFromMsSignal, iConnections);
+
+    connReqFromMsCount++;
+    emit(connReqFromMsSignal, connReqFromMsCount);
+    emit(numConnectionsSignal, numConnections);
 }
 
 void BTS::processMsgCheckBtsFromMs(cMessage *msg)
@@ -146,12 +160,27 @@ void BTS::processMsgCheckBtsFromMs(cMessage *msg)
     msg->par("src") = bcc;
     double dblPower = getRSSIFromPacket(msg);
     EV << "==> [BTS] RSSI=" << dblPower << endl;
-    if ((dblPower != -1) && (iConnections < iSlots)) // if it sees the ms and has free slot
+    if ((dblPower != -1) && (numConnections < numSlots)) // if it sees the ms and has free slot
     {
         msg->addPar(*new cMsgPar("data") = dblPower);
         EV << "==> [BTS] Sending data to " << iDest << endl;
         send(msg, "to_air");
+    }else {
+        errNoSlot++;
+        emit(errNoSlotSignal, errNoSlot);
     }
+
+//    // Stats
+//    char signalName[32];
+//    sprintf(signalName, "phone%s-rssi", iClientAddr);
+//    simsignal_t signal = registerSignal(signalName);
+//
+//    char statisticName[32];
+//    sprintf(statisticName, "phone%s-rssi", iClientAddr);
+//    cProperty *statisticTemplate = getProperties()->get("statisticTemplate", "phoneRssi");
+//    ev.addResultRecorders(this, signal, statisticName, statisticTemplate);
+//    emit(signal, dblPower);
+
 }
 
 void BTS::processMsgDiscReqFromMs(cMessage *msg)
@@ -169,7 +198,9 @@ void BTS::processMsgDiscReqFromMs(cMessage *msg)
         connectedPhones.erase(iClientAddrStr);
     }
     EV << "Phone IMSI:"<<iClientAddr <<" is now disconnected \n";
-    iConnections--;        // Decrease the number of current connections
+    numConnections--;        // Decrease the number of current connections
+
+    emit(numConnectionsSignal, numConnections);
 }
 
 void BTS::processMsgHandoverFromBsc(cMessage *msg)
@@ -188,27 +219,34 @@ void BTS::processMsgHandoverFromBsc(cMessage *msg)
             handover_ms->addPar(*new cMsgPar("newbts") = iNewBTS);
             handover_ms->addPar(*new cMsgPar("dest")) = iMS;
             handover_ms->addPar(*new cMsgPar("src")) = bcc;  //send to ms
-            iConnections--;
+            numConnections--;
             ev << "==> [BTS] Sending HANDOVER_MS to client " << iClientAddr
-                    << ", free slots left:" << iSlots - iConnections
+                    << ", free slots left:" << numSlots - numConnections
                     << '\n';
             send(handover_ms, "to_air");
+
+            handOverToMsCount++;
+            emit(handOverToMsSignal, handOverToMsCount);
         } else {                            // Disconnect MS immediately
             cPacket *force_disc = new cPacket("FORCE_DISC", FORCE_DISC);
             force_disc->addPar(new cMsgPar("dest")) = iMS;
             force_disc->addPar(new cMsgPar("src")) = bcc;   //send to ms
-            iConnections--;
+            numConnections--;
             ev << "==> [BTS] Sending FORCE_DISC to client " << iClientAddr
-               << ", free slots left:" << iSlots - iConnections
+               << ", free slots left:" << numSlots - numConnections
                << '\n';
             send(force_disc, "to_air");
+
+            emit(forceDiscSignal, 1);
         }
     }
+
+    emit(numConnectionsSignal, numConnections);
 }
 
 void BTS::processMsgForceCheckMsFromBsc(cMessage *msg)
 {
-    if (iConnections < iSlots)                // If there are free slots
+    if (numConnections < numSlots)                // If there are free slots
     {
         const char* iMS = msg->par("ms");
        // const char* iDest = msg->par("dest");
@@ -217,6 +255,9 @@ void BTS::processMsgForceCheckMsFromBsc(cMessage *msg)
         check_ms->addPar(*new cMsgPar("src")) = bcc;
         ev << "Sending CHECK_MS to client " << iMS << '\n';
         send(check_ms, "to_air");
+    }
+    else {
+        emit(errNoSlotSignal, errNoSlot);
     }
 }
 void BTS::processMsgDataFromMs(cMessage *msg)
@@ -228,7 +269,7 @@ void BTS::processMsgDataFromMs(cMessage *msg)
     msg->par("dest") = iClientAddr;
     msg->par("src") = iDest;
     double dblPower = getRSSIFromPacket(msg);
-    if ((dblPower != -1) && (iConnections < iSlots)) // if it sees the ms and has free slot
+    if ((dblPower != -1) && (numConnections < numSlots)) // if it sees the ms and has free slot
             {
         handover_data = new cPacket("HANDOVER_DATA", HANDOVER_DATA);
         handover_data->addPar(*new cMsgPar("ms") = iClientAddr);
@@ -237,6 +278,12 @@ void BTS::processMsgDataFromMs(cMessage *msg)
         ev << "==> [BTS] Sending HANDOVER_DATA with watt " << dblPower
            << " to BSC\n";
         send(handover_data, "to_bsc");
+
+        handOverToBscCount++;
+        emit(handOverToBscSignal, handOverToBscCount);
+    }
+    else {
+        emit(errNoSlotSignal, errNoSlot);
     }
 }
 
@@ -246,11 +293,8 @@ void BTS::processMsgCheckLineFromMs(cMessage *msg)
     //const char* iDest = msg->par("dest");
     double dblPower = getRSSIFromPacket(msg);
     EV << "==> [BTS] RCV RSSI=" << dblPower << endl;
-    emit(checkLineFromMsSignal, dblPower);
 
-//    EV << " Watt:" << dblPower << " Watt limit "
-//       << dblWatt * HANDOVER_LIMIT << "\n";
-
+    emit(handOverCheckFromMsSignal, 1);
     if ((dblPower < 0) || (dblPower < dblWatt * HANDOVER_LIMIT)) {
         // Check for handover
         handover_chk = new cMessage("HANDOVER_CHK", HANDOVER_CHK);
@@ -259,6 +303,11 @@ void BTS::processMsgCheckLineFromMs(cMessage *msg)
         handover_chk->addPar(*new cMsgPar("watt") = dblPower);
         EV << "==> [BTS] Sending HANDOVER_CHK to BSC\n";
         send(handover_chk, "to_bsc");
+        handOverCheckToBscCount++;
+        emit(handOverCheckToBscSignal, handOverCheckToBscCount);
+    }
+    else {
+        emit(errNoSlotSignal, errNoSlot);
     }
 }
 
