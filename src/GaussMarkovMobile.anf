@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scave:Analysis xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:scave="http://www.omnetpp.org/omnetpp/scave">
+  <inputs>
+    <inputs name="/GSM_SIM/src/results/GaussMarkovMobile-*.vec"/>
+    <inputs name="/GSM_SIM/src/results/GaussMarkovMobile-*.sca"/>
+  </inputs>
+  <datasets>
+    <datasets name="Coordinates">
+      <items xsi:type="scave:Add" filterPattern="name(coordX:vector)" type="VECTOR"/>
+      <items xsi:type="scave:Add" filterPattern="name(coordY:vector)" type="VECTOR"/>
+      <items xsi:type="scave:Add" filterPattern="name(RSSI:vector)" type="VECTOR"/>
+      <items xsi:type="scave:Compute"/>
+      <items xsi:type="scave:ScatterChart"/>
+    </datasets>
+  </datasets>
+  <chartSheets>
+    <chartSheets name="default" charts="//@datasets/@datasets.0/@items.4"/>
+  </chartSheets>
+</scave:Analysis>

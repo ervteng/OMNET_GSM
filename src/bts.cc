@@ -31,7 +31,10 @@ void BTS::initialize()
     bcc = par("BCC");
     beaconInterval = par("beaconInterval");
     beaconTrigger = new cMessage("SEND_BEACON");    // send the first scheduled move message
-    scheduleAt(simTime()+ 0.1,beaconTrigger);
+
+    double startTime = par("turnOnTime");
+    scheduleAt(simTime()+startTime,beaconTrigger);
+    EV << "BTS will turn on at "<<startTime << endl;
 
     // Register Signals
     connReqFromMsSignal = registerSignal("connReqFromMs");
@@ -93,6 +96,10 @@ void BTS::handleMessage(cMessage *msg)
     if(msg->isSelfMessage()){
         EV << "Time to send a Beacon!\n";
         sendBeacon();
+    }
+    else if(!isOn){
+            delete msg;
+            return;
     }
     else{
         const char* intendedDest = msg->par("dest");
@@ -319,7 +326,7 @@ void BTS::sendBeacon()
     send(bts_beacon, "to_air");
 
     emit(sendBeaconSignal, 1);
-
+    isOn = true;
        // send the first scheduled move message
     // The Uniform is there to prevent the beacons from colliding. The real way is to use channel
     // selection, but we do this in the interest of time.

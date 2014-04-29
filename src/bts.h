@@ -52,8 +52,10 @@ class BTS: public cSimpleModule {
         cPacket *bts_beacon;
         //Messages that go to the BSC
         cMessage *handover_chk, *handover_data;
-        //MEssages that go over the air
+        //Messages that go over the air
         cPacket *handover_ms, *force_disc;
+        //Is the BTS on? Only the Malicious BTS is ever off
+        bool isOn;
 
         // Signal
         simsignal_t connReqFromMsSignal;

@@ -4,10 +4,11 @@ simple BTS
 {
     parameters:
         int slots; // how many connection can be established
-        double watt = default(50); // the watt
+        double watt @unit(W) = default(50W); // the watt
         double phones; // number of phones
         string BCC = default("000");
         double beaconInterval @unit(s) = default(1s);
+        double turnOnTime @unit(s) = default(0.1s); //When to turn on the BTS 
 //        @signal[connReqFromMs](type=int);
         @statistic[connReqFromMs](title="Connection Request From MS"; record=count );
         @statistic[sendBeacon](title="Send beacon"; record=count );

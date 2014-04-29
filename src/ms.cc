@@ -87,7 +87,7 @@ void MS::receiveChangeNotification(int category, const cObject *details)
 
 void MS::handleMessage(cMessage *msg)
 {
-    EV << "==> DEBUG: selected: "<<selected<<" \n";
+    //EV << "==> DEBUG: selected: "<<selected<<" \n";
 //    EV << "==> DEBUG: handleMessage: params\n";
 //    int n = getNumParams();
 //    for (int i=0; i<n; i++) {
