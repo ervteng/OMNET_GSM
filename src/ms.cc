@@ -26,6 +26,13 @@ void MS::initialize(){
     status=TRIGGER;                            // program state                          // number of handovers
     delay=1.0;
 
+    // Stats counter
+    missedCalls = 0;
+    attemptedCalls = 0;
+    brokenCalls = 0;
+    handOverCalls = 0;
+    successfullCalls = 0;
+
     connected = "no_bts";
     callinterval = CALL_INTERVAL_MIN + exponential(CALL_INTERVAL);
     calllength = CALL_LENGTH_MIN + exponential(CALL_LENGTH);
@@ -53,44 +60,21 @@ void MS::initialize(){
     scheduleAt(simTime()+0.1,scanChannelsStart);
     // Set up instrumentation
     beaconRSSIsignal = registerSignal("receivedRSSI");
-
+    attemptedCallSignal = registerSignal("attemptedCall");
+    successfulCallSignal = registerSignal("successfulCall");
+    missedCallSignal = registerSignal("missedCall");
+    brokenCallSignal = registerSignal("brokenCall");
+    handoverCallSignal = registerSignal("handoverCall");
+    disconnectedCallSignal = registerSignal("disconnectedCall");
     // FOR DEBUGGING ONLY
     //callinterval = 0.3;
+
 }
-// Write the logs at the end of the simulation
+
+
 void MS::finish()
 {
-    double  dblTemp;
-    char    sTemp[128];
-    FILE *out;
-
-    out = fopen("statistic.txt","at");
-    fprintf(out,"MS#%d Number of attempted calls: %d\n",imsi,iCalls);
-    if (iCalls-iMissedCalls > 0)
-        dblTemp = iHandover*100.0/(iCalls-iMissedCalls);
-    else
-        dblTemp = 0.0;
-    sprintf(sTemp,"%.4lf",dblTemp);
-    fprintf(out,"MS#%d Number of successful calls: %d, handover: %d, percentage: %s%%\n",imsi,iCalls-iMissedCalls,iHandover,sTemp);
-    if (iCalls > 0)
-        dblTemp = iMissedCalls*100.0/iCalls;
-    else
-        dblTemp = 100.0;
-    sprintf(sTemp,"%.4lf",dblTemp);
-    fprintf(out,"MS#%d Missed calls: %d, error percentage: %s%%\n",imsi,iMissedCalls,sTemp );
-    if (iCalls > 0)
-        dblTemp = iBroken*100.0/iCalls;
-    else
-        dblTemp = 100.0;
-    sprintf(sTemp,"%.4lf",dblTemp);
-    fprintf(out,"MS#%d Broken calls: %d, error percentage: %s%%\n",imsi,iBroken,sTemp );
-    fclose(out);
-
-    recordScalar("# Attempted Calls", iCalls);
-    recordScalar("# Successful Calls", iCalls-iMissedCalls);
-    recordScalar("# Handovers", iHandover);
-    recordScalar("# Missed calls", iMissedCalls);
-    recordScalar("# Broken calls", iBroken);
+//    Ev << "[MS] Calling finish()\n";
 }
 
 void MS::receiveChangeNotification(int category, const cObject *details)
@@ -101,17 +85,6 @@ void MS::receiveChangeNotification(int category, const cObject *details)
 
 void MS::handleMessage(cMessage *msg)
 {
-    //EV << "==> DEBUG: selected: "<<selected<<" \n";
-//    EV << "==> DEBUG: handleMessage: params\n";
-//    int n = getNumParams();
-//    for (int i=0; i<n; i++) {
-//           cPar& p = par(i);
-//           ev << "parameter: " << p.getName() << "\n";
-//           ev << "  type:" << cPar::getTypeName(p.getType()) << "\n";
-//           ev << "  contains:" << p.str() << "\n";
-//    }
-//    EV << "==> DEBUG: End params\n";
-
     type = msg->getKind();
     EV << "Message is " << type << "\n";
     if(msg->isSelfMessage()){
@@ -185,6 +158,8 @@ void MS::handleMessage(cMessage *msg)
         send( disc_req, "to_air" );                // Send disconnect request to the BTS
         lastmsg=simTime();
         status=DISC_REQ;
+
+        emit(disconnectedCallSignal, 1);
     };
 }
 
@@ -219,19 +194,23 @@ void MS::processMsgTrigger(cMessage *msg)
                 send( conn_req, "to_air" );    // Send connection request
                 status=CONN_REQ;
                 lastmsg=simTime();
-                iCalls++;
+                attemptedCalls++;
+                emit(attemptedCallSignal, 1);
+
             } else
             {                                // no available BTS
-                iCalls++;
-                iMissedCalls++;
-                ev << "==> MS[" << imsi << "] Can't connect (CHECK_BTS). Error #" << iMissedCalls;
+                attemptedCalls++;
+                emit(attemptedCallSignal, 1);
+
+                missedCalls++;
+                emit(missedCallSignal, 1);
+
+                ev << "==> MS[" << imsi << "] Can't connect (CHECK_BTS). Error #" << missedCalls;
                 // calculate new parameters
                 callinterval = CALL_RETRY_INTERVAL_MIN + exponential(CALL_RETRY_INTERVAL);
                 calllength = CALL_RETRY_LENGTH_MIN + exponential(CALL_RETRY_LENGTH);
                 status=TRIGGER;
-                out = fopen("statistic.txt","at");// Log missed call
-                //fprintf(out,"At %s = MS#%d Missed call\n",simtimeToStr(lastmsg),imsi);
-                fclose(out);
+
             };
         };
         break;
@@ -241,22 +220,20 @@ void MS::processMsgTrigger(cMessage *msg)
         {
             if (connected != "no_bts")                // If we were connected before
             {
-                                            // Broken handover
-                iBroken++;
-                out = fopen("statistic.txt","at");// Log broken call
-                //fprintf(out,"At %s = MS#%d Broken call\n",simtimeToStr(lastmsg),imsi);
-                fclose(out);
+                // Broken handover
+                brokenCalls++;
+                emit(brokenCallSignal, 1);
             }
             else
             {
-                                            // Can't make a new call
-                iMissedCalls++;
-                out = fopen("statistic.txt","at");// Log missed call
-                //fprintf(out,"At %s = MS#%d Missed call\n",simtimeToStr(lastmsg),imsi);
-                fclose(out);
+                // Can't make a new call
+                missedCalls++;
+                emit(missedCallSignal, 1);
+
             }
-            ev << "==> MS[" << imsi << "] Can't connect (CONN_REQ). Error #" << iMissedCalls;
-                                              // Calculate new call parameters
+            ev << "==> MS[" << imsi << "] Can't connect (CONN_REQ). Error #" << missedCalls;
+
+            // Calculate new call parameters
             callinterval = CALL_RETRY_INTERVAL_MIN + exponential(CALL_RETRY_INTERVAL);
             calllength = CALL_RETRY_LENGTH_MIN + exponential(CALL_RETRY_LENGTH);
             status=TRIGGER;
@@ -298,18 +275,20 @@ void MS::processMsgBtsData(cMessage *msg)
         send( conn_req, "to_air" );            // Send connection request
         status=CONN_REQ;
         lastmsg=simTime();
-        iCalls++;
+        attemptedCalls++;
+        emit(attemptedCallSignal, 1);
     } else {                                        // No answer from BTSs
-        iCalls++;
-        iMissedCalls++;
-        ev << "Can't connect. (CHECK_BTS) Error #" << iMissedCalls;
-                                            // Calculate new call parameters
+        attemptedCalls++;
+        emit(attemptedCallSignal, 1);
+        missedCalls++;
+        emit(missedCallSignal, 1);
+
+        ev << "Can't connect. (CHECK_BTS) Error #" << missedCalls;
+
+        // Calculate new call parameters
         callinterval = CALL_RETRY_INTERVAL_MIN + exponential(CALL_RETRY_INTERVAL);
         calllength = CALL_RETRY_LENGTH_MIN + exponential(CALL_RETRY_LENGTH);
         status=TRIGGER;
-        out = fopen("statistic.txt","at");    // Log missed call
-        //fprintf(out,"At %s = MS#%d Missed call\n",simtimeToStr(lastmsg),imsi);
-        fclose(out);
     }
     delete msg;
 }
@@ -323,6 +302,9 @@ void MS::processMsgConnAck(cMessage *msg)
     status=CONN_ACK;
     lastmsg=simTime();
     alltime=0;                                // Reset the timer
+
+    successfullCalls++;
+    emit(successfulCallSignal, 1);
 }
 
 void MS::processMsgDiscAck(cMessage *msg)
@@ -331,10 +313,12 @@ void MS::processMsgDiscAck(cMessage *msg)
     lastmsg=simTime();
     alltime=0;
     status=TRIGGER;
-                                            // Calculate new call parameters
+
+    // Calculate new call parameters
     callinterval = CALL_INTERVAL + exponential(CALL_INTERVAL_MIN);
     calllength = CALL_LENGTH_MIN + exponential(CALL_LENGTH);
     connected = "no_bts";
+
 }
 
 void MS::processMsgForceDisc(cMessage *msg)
@@ -343,14 +327,15 @@ void MS::processMsgForceDisc(cMessage *msg)
     lastmsg=simTime();
     alltime=0;
     status=TRIGGER;
-                                            // Calculate new call parameters
+
+    // Calculate new call parameters
     callinterval = CALL_RETRY_INTERVAL_MIN + exponential(CALL_RETRY_INTERVAL);
     calllength = CALL_RETRY_LENGTH_MIN /2 + exponential(CALL_RETRY_LENGTH) /2;
     connected = "no_bts";                            // Not connected to a BTS
-    iBroken++;
-    out = fopen("statistic.txt","at");        // Log broken call
-    //fprintf(out,"At %s = MS#%d Broken call\n",simtimeToStr(lastmsg),imsi);
-    fclose(out);
+
+    brokenCalls++;
+    emit(brokenCallSignal, 1);
+
 }
 
 void MS::processMsgCheckMs(cMessage *msg)
@@ -376,17 +361,15 @@ void MS::processMsgHandoverMs(cMessage *msg)
         send( conn_req, "to_air" );
         status=CONN_REQ;
         lastmsg=simTime();
-        iHandover++;
-        out = fopen("statistic.txt","at");    // Log handover
-        //fprintf(out,"At %s = MS#%d HANDOVER from %d to %d\n",simtimeToStr(lastmsg),imsi,connected,selected);
-        fclose(out);
+        handOverCalls++;
+        emit(handoverCallSignal, 1);
+        emit(attemptedCallSignal, 1);
     }
     delete msg;
 }
 
 void MS::processMsgBtsBeacon(cMessage *msg)
 {
-
     if(scanStatus==true && status == TRIGGER )
     {// if the last time we updated from a beacon was too long ago
         ev << "==> MS[" << imsi << "] got BEACON\n";
@@ -397,7 +380,6 @@ void MS::processMsgBtsBeacon(cMessage *msg)
             selected = std::string(msg->par("src"));
             EV << "==> MS[" << imsi << "] New Best!" << selected << endl;
         }
-
     }
     else if(std::string(msg->par("src"))==selected) // If the beacon is from the currently connected BTS
     {

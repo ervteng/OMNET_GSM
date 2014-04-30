@@ -49,6 +49,7 @@ void BTS::initialize()
     handOverCheckToBscSignal = registerSignal("handOverCheckToBsc");
     handOverCheckFromMsSignal = registerSignal("handOverCheckFromMs");
     forceDiscSignal = registerSignal("forceDisc");
+    discRequestSignal = registerSignal("discRequest");
 
     // Error
     errNoSlot = 0;
@@ -66,7 +67,7 @@ void BTS::finish()
     ev << "Calling finished()...\n";
     simtime_t t = simTime();
     recordScalar("simulated time", t);
-    //delete handover_ms, force_disc;
+//    delete handover_ms, force_disc;
 }
 
 void BTS::destroy() {
@@ -148,6 +149,7 @@ void BTS::processMsgConnReqFromMs(cMessage *msg)
         //iPhoneState[iClientAddr] = PHONE_STATE_CONNECTED; // Set the phone state to connected
         connectedPhones.insert(std::string(iClientAddr));
         numConnections++;    // Increase the number of current connections
+        emit(numConnectionsSignal, numConnections);
     }else {
         EV << "==> [BTS] Error: no slot available\n";
         errNoSlot++;
@@ -157,7 +159,6 @@ void BTS::processMsgConnReqFromMs(cMessage *msg)
 
     connReqFromMsCount++;
     emit(connReqFromMsSignal, connReqFromMsCount);
-    emit(numConnectionsSignal, numConnections);
 }
 
 void BTS::processMsgCheckBtsFromMs(cMessage *msg)
@@ -212,6 +213,7 @@ void BTS::processMsgDiscReqFromMs(cMessage *msg)
     numConnections--;        // Decrease the number of current connections
 
     emit(numConnectionsSignal, numConnections);
+    emit(discRequestSignal, 1);
 }
 
 void BTS::processMsgHandoverFromBsc(cMessage *msg)

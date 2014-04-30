@@ -26,6 +26,12 @@ simple MS
      	string imsi;
      	double beaconListenInterval @unit(s) = default(30s); //how long to re-calculate beacon connection
     	@statistic[RSSI](title="RSSI"; source="receivedRSSI"; record=vector,stats; interpolationmode=none);
+    	@statistic[attemptedCall](title="The number of attempted calls"; record=count,vector(count),vector );
+        @statistic[successfulCall](title="The number of successful calls"; record=count,vector(count),vector );
+        @statistic[missedCall](title="The number of missed calls"; record=count,vector(count),vector );
+        @statistic[brokenCall](title="The number of broken calls"; record=count,vector(count),vector );
+        @statistic[handoverCall](title="The number of handover calls"; record=count,vector(count),vector );
+        @statistic[disconnectedCall](title="The number of disconnected calls"; record=count,vector(count),vector );
     gates: 
         input from_air; // gate for connecting to BTS
         output to_air; // gate for connecting to BTS 	

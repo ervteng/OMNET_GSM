@@ -68,6 +68,7 @@ class BTS: public cSimpleModule {
         simsignal_t handOverCheckFromMsSignal;
         simsignal_t handOverCheckToBscSignal;
         simsignal_t forceDiscSignal;
+        simsignal_t discRequestSignal;
 
         // Stats counters
         int errNoSlot;

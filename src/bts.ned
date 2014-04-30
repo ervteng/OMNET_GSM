@@ -18,7 +18,9 @@ simple BTS
         @statistic[handOverToMs](title="Count handover to MS"; record=count,vector );
         @statistic[handOverCheckToBsc](title="Count handover check to BSC"; record=count,vector );
         @statistic[handOverCheckFromMs](title="Count handover check from MS"; record=count,vector );
+        @statistic[discRequest](title="Disconnect Request from MS"; record=count,vector );
         @statistic[forceDisc](title="Force Disconnect to MS"; record=count );
+        
 
 //        @statistic[checkLineFromMs](title="Line check"; source="checkLineFromMs"; record=stats,vector);
         

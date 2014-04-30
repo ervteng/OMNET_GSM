@@ -10,3 +10,7 @@ src/results
 
 statistic.txt
 src/statistic.txt
+/.computed
+
+
+*.anf

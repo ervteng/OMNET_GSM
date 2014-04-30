@@ -39,25 +39,19 @@ class MS : public cSimpleModule, public INotifiable
 
 
     private:
-        int iMissedCalls;               // number of missed calls
-        int iCalls;                     // number of calls
-        int iBroken;                    // number of broken calls
-        int iHandover;               // number of handovers
+        int missedCalls;               // number of missed calls
+        int attemptedCalls;                     // number of calls
+        int brokenCalls;                    // number of broken calls
+        int handOverCalls;               // number of handovers
+        int successfullCalls;               // number of successful calls
         std::string connected;                  // BTS number if connected
         int status;                     // Finite state machine
-        int i;                        // the number of bts
         int type;                       // message type                          // program state                          // number of handovers
         double delay;
-        double dblTemp;
-//        // Query module parameters
-//        double xc;
-//        double yc;
-//        int vx;
-//        int vy;
         double callinterval;
         double calllength;
         double timeout;
-        FILE *out;
+
 
         cPacket *conn_req,*disc_req,*allmsg;
         cPacket *check_bts,*check_ms,*check_line;
@@ -81,6 +75,14 @@ class MS : public cSimpleModule, public INotifiable
         //cOutVector currentRSSI;
 
         bool scanStatus;
+
+        // Signal
+        simsignal_t attemptedCallSignal;
+        simsignal_t successfulCallSignal;
+        simsignal_t missedCallSignal;
+        simsignal_t brokenCallSignal;
+        simsignal_t handoverCallSignal;
+        simsignal_t disconnectedCallSignal;
 
 };
 
