@@ -10,7 +10,6 @@ import os.path
 from scipy.interpolate import griddata
 from mpl_toolkits.mplot3d import Axes3D
 
-u = 20
 numPhones = 10
 
 if len(sys.argv) == 1:
@@ -44,7 +43,7 @@ for i in range(1,numPhones*3+1):
 		allTheData[MSindex] = np.zeros((currentData['time'].size,4))
 		allTheData[MSindex][:,3] = currentData[datacolumnname] 
 		allTheData[MSindex][:,0] = currentData['time'] 
-		#print allTheData[MSindex]
+		print allTheData[MSindex]
 
 for i in range(1,numPhones*3):
 	filename = rundir +"/" + runname + "/" + runname + "-" + str(i) + ".csv"
@@ -90,16 +89,22 @@ for MS in range(1,numPhones):
 	currentMSData = allTheData[MS]
 	print MS
 	print currentMSData
-	print np.concatenate([graphableData,currentMSData])
+	graphableData = np.concatenate([graphableData,currentMSData])
 	#points[MS].set_data(currentMSData[i,1], currentMSData[i,2])
 	#points[MS].set_3d_properties(currentMSData[i,3])
-X = [3,2,3]
-Y = [3,2,3]
-Z = [3,2,3]
-grid_x, grid_y = np.mgrid[0:400:100j, 0:300:100j]
-grid_z2 = griddata((graphableData[:,1],graphableData[:,2]), graphableData[:,3], (grid_x, grid_y), method='linear')
+
+[grid_x, grid_y] = np.mgrid[0:400:100j, 0:300:100j]
+print graphableData[:,2].T
+grid_z2 = griddata( (graphableData[:,1],graphableData[:,2]), graphableData[:,3], (grid_x, grid_y), method='linear')
 ax.plot_surface(grid_x, grid_y, grid_z2, rstride=5, cstride=5, cmap=cm.coolwarm, vmin=0, vmax = 0.004)
 
+X = graphableData[:,1]
+Y = graphableData[:,2]
+Z = graphableData[:,3]
+
+
 plt.figure()
-plt.contourf(grid_x,grid_y,grid_z2,50, locator=ticker.LogLocator())
+plt.contourf(grid_x,grid_y,np.log(10000*grid_z2),40)
+#plt.scatter(X,Y,c=Z,cmap=cm.coolwarm)
+#plt.contourf(grid_x,grid_y,grid_z2,50)
 plt.show()

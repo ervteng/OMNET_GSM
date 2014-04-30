@@ -25,6 +25,7 @@ simple MS
      	double timeout @unit(s) = default(1s); // how long do you wait before timeout 
      	string imsi;
      	double beaconListenInterval @unit(s) = default(30s); //how long to re-calculate beacon connection
+    	double scanDuration @unit(s) = default(0.5s); //How long to listen for beacons before deciding on the strongest. SHould be longer than the BTS beacon interval.
     	@statistic[RSSI](title="RSSI"; source="receivedRSSI"; record=vector,stats; interpolationmode=none);
     	@statistic[attemptedCall](title="The number of attempted calls"; record=count,vector(count),vector );
         @statistic[successfulCall](title="The number of successful calls"; record=count,vector(count),vector );

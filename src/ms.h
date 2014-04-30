@@ -61,6 +61,7 @@ class MS : public cSimpleModule, public INotifiable
         SimTime lastmsg;
         double min;
         double beaconListenInterval;
+        double scanDuration;
         SimTime lastBeaconUpdate;
         SimTime counter;
         SimTime alltime;

@@ -52,6 +52,7 @@ void MS::initialize(){
     lastBeaconUpdate = simTime();
     scheduleAt(simTime(),movecar);
     min = 0;
+    scanDuration = par("scanDuration");
 
     // Set up selfmessages
     scanChannelsStart = new cMessage( "START_SCANNING",START_SCANNING);
@@ -395,7 +396,7 @@ void MS::startScanning()
     min = 0;
     //scanChannelsStop = new cMessage( "STOP_SCANNING",STOP_SCANNING);// Sending connection request to new bts
     // When the self message is received, stop listening for beacons.
-    scheduleAt(simTime()+1, scanChannelsStop);
+    scheduleAt(simTime()+scanDuration, scanChannelsStop);
 }
 
 void MS::stopScanning()
