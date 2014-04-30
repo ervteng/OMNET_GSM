@@ -158,6 +158,8 @@ void MS::handleMessage(cMessage *msg)
         send( disc_req, "to_air" );                // Send disconnect request to the BTS
         lastmsg=simTime();
         status=DISC_REQ;
+
+        emit(disconnectedCallSignal, 1);
     };
 }
 
@@ -317,7 +319,6 @@ void MS::processMsgDiscAck(cMessage *msg)
     calllength = CALL_LENGTH_MIN + exponential(CALL_LENGTH);
     connected = "no_bts";
 
-    emit(disconnectedCallSignal, 1);
 }
 
 void MS::processMsgForceDisc(cMessage *msg)
@@ -362,7 +363,7 @@ void MS::processMsgHandoverMs(cMessage *msg)
         lastmsg=simTime();
         handOverCalls++;
         emit(handoverCallSignal, 1);
-
+        emit(attemptedCallSignal, 1);
     }
     delete msg;
 }
