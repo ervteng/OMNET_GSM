@@ -76,10 +76,8 @@ ax = fig.add_subplot(111, projection='3d')
 points = []
 #for _ in range(0,numPhones):
 #	points += ax.plot([], [], [], 'bo')
-ax.set_xlim((0, 400))
-ax.set_ylim((0, 300))
-ax.set_zlim((0, 0.2))
-ax.zaxis.set_scale('log')
+
+#ax.zaxis.set_scale('log')
 #print points
 # initialization function: plot the background of each frame
 print allTheData[0]
@@ -93,10 +91,15 @@ for MS in range(1,numPhones):
 	#points[MS].set_data(currentMSData[i,1], currentMSData[i,2])
 	#points[MS].set_3d_properties(currentMSData[i,3])
 
-[grid_x, grid_y] = np.mgrid[0:400:100j, 0:300:100j]
+[grid_x, grid_y] = np.mgrid[0:4000:100j, 0:3000:100j]
+
+ax.set_xlim((0, 4000))
+ax.set_ylim((0, 3000))
+ax.set_zlim((-60, np.amax(graphableData[:,3])))
+print np.amax(graphableData[:,3])
 print graphableData[:,2].T
-grid_z2 = griddata( (graphableData[:,1],graphableData[:,2]), graphableData[:,3], (grid_x, grid_y), method='linear')
-ax.plot_surface(grid_x, grid_y, grid_z2, rstride=5, cstride=5, cmap=cm.coolwarm, vmin=0, vmax = 0.004)
+grid_z2 = griddata( (graphableData[:,1],graphableData[:,2]), graphableData[:,3], (grid_x, grid_y), method='nearest')
+ax.plot_surface(grid_x, grid_y, grid_z2, rstride=5, cstride=5, cmap=cm.coolwarm, vmin=-60, vmax = 0)
 
 X = graphableData[:,1]
 Y = graphableData[:,2]
@@ -104,7 +107,8 @@ Z = graphableData[:,3]
 
 
 plt.figure()
-plt.contourf(grid_x,grid_y,np.log(10000*grid_z2),40)
+#plt.contourf(grid_x,grid_y,np.log(10000*grid_z2),40)
+plt.contourf(grid_x,grid_y,grid_z2,40)
 #plt.scatter(X,Y,c=Z,cmap=cm.coolwarm)
 #plt.contourf(grid_x,grid_y,grid_z2,50)
 plt.show()

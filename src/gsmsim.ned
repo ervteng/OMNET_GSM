@@ -49,7 +49,7 @@ network GSMSIM
             parameters:
                 numbts = number_bts;
                 phones = number_ms;
-                @display("p=309,51;i=router");
+                @display("p=158,155;i=router");
             gates:
                 from_bts[number_bts];
                 to_bts[number_bts];

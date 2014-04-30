@@ -15,7 +15,7 @@
 
 #include <GSMRadio.h>
 
-#define MIN_DISTANCE 0.001 // minimum distance 1 millimeter
+#define MIN_DISTANCE 1 // minimum distance 1 meter
 #define BASE_NOISE_LEVEL (noiseGenerator?noiseLevel+noiseGenerator->noiseLevel():noiseLevel)
 
 GSMRadio::GSMRadio() {
