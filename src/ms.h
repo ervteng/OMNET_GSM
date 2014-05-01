@@ -84,6 +84,7 @@ class MS : public cSimpleModule, public INotifiable
         simsignal_t brokenCallSignal;
         simsignal_t handoverCallSignal;
         simsignal_t disconnectedCallSignal;
+        simsignal_t failedtoFindSignal;
 
 };
 

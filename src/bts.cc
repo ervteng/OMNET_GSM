@@ -208,11 +208,12 @@ void BTS::processMsgDiscReqFromMs(cMessage *msg)
     //iPhoneState[iClientAddr] = PHONE_STATE_DISCONNECTED; // Set the phone state to not connected
     if(connectedPhones.count(iClientAddrStr) > 0){
         connectedPhones.erase(iClientAddrStr);
+        numConnections--;
+        emit(numConnectionsSignal, numConnections);
+        EV << "Phone IMSI:"<<iClientAddr <<" is now disconnected \n";
     }
-    EV << "Phone IMSI:"<<iClientAddr <<" is now disconnected \n";
-    numConnections--;        // Decrease the number of current connections
 
-    emit(numConnectionsSignal, numConnections);
+         // Decrease the number of current connections
     emit(discRequestSignal, 1);
 }
 
@@ -224,7 +225,7 @@ void BTS::processMsgHandoverFromBsc(cMessage *msg)
     const char* iDest = msg->par("dest");
     const char* iNewBTS = msg->par("newbts");
     const char* iMS = msg->par("ms");
-    EV << "Received Handover request from BSC. Process? "<< connectedPhones.count(std::string("hellothere"));
+    EV << "Received Handover request from BSC. Process? "<< connectedPhones.count(std::string("iMS"));
     if (connectedPhones.count(std::string(iMS)) != 0) {
         if (strcmp(iNewBTS,"no_bts")!=0)   // Disconnect MS and send the new bts number
                 {
@@ -232,7 +233,7 @@ void BTS::processMsgHandoverFromBsc(cMessage *msg)
             handover_ms->addPar(*new cMsgPar("newbts") = iNewBTS);
             handover_ms->addPar(*new cMsgPar("dest")) = iMS;
             handover_ms->addPar(*new cMsgPar("src")) = bcc;  //send to ms
-            numConnections--;
+            //numConnections--;
             ev << "==> [BTS] Sending HANDOVER_MS to client " << iClientAddr
                     << ", free slots left:" << numSlots - numConnections
                     << '\n';
@@ -244,7 +245,7 @@ void BTS::processMsgHandoverFromBsc(cMessage *msg)
             cPacket *force_disc = new cPacket("FORCE_DISC", FORCE_DISC);
             force_disc->addPar(new cMsgPar("dest")) = iMS;
             force_disc->addPar(new cMsgPar("src")) = bcc;   //send to ms
-            numConnections--;
+            //numConnections--;
             ev << "==> [BTS] Sending FORCE_DISC to client " << iClientAddr
                << ", free slots left:" << numSlots - numConnections
                << '\n';
@@ -252,6 +253,8 @@ void BTS::processMsgHandoverFromBsc(cMessage *msg)
 
             emit(forceDiscSignal, 1);
         }
+        numConnections--;
+        connectedPhones.erase(std::string(iMS));
     }
     // Memory
     delete msg;

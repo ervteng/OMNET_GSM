@@ -49,7 +49,7 @@ network GSMSIM
             parameters:
                 numbts = number_bts;
                 phones = number_ms;
-                @display("p=158,155;i=router");
+                @display("p=322,82;i=router");
             gates:
                 from_bts[number_bts];
                 to_bts[number_bts];
@@ -77,13 +77,13 @@ network GSMSIM
             parameters:
                 bts_logic.phones = number_ms;
                 bts_logic.slots = default(3); // how many users it can hold
-                @display("p=200,200");
+                @display("p=200,246");
         }
         malicious_bsc: BSC {
             parameters:
                 numbts = 1;
                 phones = number_ms;
-                @display("p=300,200;i=router");
+                @display("p=301,246;i=router");
             gates:
                 from_bts[1];
                 to_bts[1];

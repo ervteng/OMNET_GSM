@@ -132,6 +132,7 @@ void GSMMac::handleUpperMsg(cPacket *msg)
             }
             else {
                 EV << "The last transmission was at the same time, it's collision.\n";
+                scheduleAt(simTime()+exponential(0.1),msg);
             }
 
         }
@@ -141,6 +142,7 @@ void GSMMac::handleUpperMsg(cPacket *msg)
 
 void GSMMac::handleSelfMsg(cMessage *msg)
 {
+    handleUpperMsg(dynamic_cast<cPacket*>(msg));
     //error("Unexpected self-message");
 }
 

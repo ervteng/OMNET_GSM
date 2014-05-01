@@ -32,6 +32,7 @@ void MS::initialize(){
     brokenCalls = 0;
     handOverCalls = 0;
     successfullCalls = 0;
+    alltime = 0;
 
     connected = "no_bts";
     callinterval = CALL_INTERVAL_MIN + exponential(CALL_INTERVAL);
@@ -61,6 +62,7 @@ void MS::initialize(){
     scheduleAt(simTime()+0.1,scanChannelsStart);
     // Set up instrumentation
     beaconRSSIsignal = registerSignal("receivedRSSI");
+    failedtoFindSignal = registerSignal("failedScan");
     attemptedCallSignal = registerSignal("attemptedCall");
     successfulCallSignal = registerSignal("successfulCall");
     missedCallSignal = registerSignal("missedCall");
@@ -68,7 +70,7 @@ void MS::initialize(){
     handoverCallSignal = registerSignal("handoverCall");
     disconnectedCallSignal = registerSignal("disconnectedCall");
     // FOR DEBUGGING ONLY
-    //callinterval = 0.3;
+    callinterval = 0.3;
 
 }
 
@@ -162,11 +164,25 @@ void MS::handleMessage(cMessage *msg)
 
         emit(disconnectedCallSignal, 1);
     };
+
+    if ((alltime>=(double)calllength)&&(status==DISC_REQ)) {
+            ev << "==> MS[" << imsi << "] sending DISC_REQ\n";
+            disc_req = new cPacket( "DISC_REQ", DISC_REQ );
+            disc_req->addPar("src") = imsi;
+            disc_req->addPar("dest") = connected.c_str();
+            send( disc_req, "to_air" );                // Send disconnect request to the BTS
+            lastmsg=simTime();
+            status=DISC_REQ;
+
+            emit(disconnectedCallSignal, 1);
+        };
 }
 
 
 void MS::processMsgTrigger(cMessage *msg)
 {
+    EV << "Status is:"<<status << endl;
+    EV << "alltime is:" <<alltime <<endl;
 
     alltime+=delay;
     //movecar = new cPacket("TRIGGER",TRIGGER);// send new scheduled message
@@ -406,6 +422,7 @@ void MS::stopScanning()
     EV << "==> MS[" << imsi << "] The best BTS is "<< selected <<endl;
     lastBeaconUpdate = simTime();
     if(min == 0){
+        emit(failedtoFindSignal, 1);
         selected = "no_bts";
         //RSSIstats.collect(0);
         //currentRSSI.record(0);
@@ -434,7 +451,7 @@ double MS::getRSSIFromPacket(cMessage *msg)
         return recPower;
     }
     else {
-        return -1;
+        return 0;
     }
 }
 

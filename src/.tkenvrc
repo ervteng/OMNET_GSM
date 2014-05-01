@@ -1,4 +1,3 @@
 # Partial Tkenv config file -- see $HOME/.tkenvrc as well
-inspector "GSMSIM" "GSMSIM" "2" "607x336+407+442:normal"
 inspector "CHECK_BTS" "cPacket" "1" "460x314+65+557:normal"
 
